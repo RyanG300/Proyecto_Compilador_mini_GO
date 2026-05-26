@@ -1,0 +1,97 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\syntaxchecker\\generated\\minigocompilerbaselistener.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:syntaxchecker\\generated\\minigocompilerbaselistener.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\mini_go_compiler.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:mini_go_compiler.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "MiniGoCompilerBaseListener.cs",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\SyntaxChecker\\generated\\MiniGoCompilerBaseListener.cs",
+              "RelativeDocumentMoniker": "SyntaxChecker\\generated\\MiniGoCompilerBaseListener.cs",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\SyntaxChecker\\generated\\MiniGoCompilerBaseListener.cs",
+              "RelativeToolTip": "SyntaxChecker\\generated\\MiniGoCompilerBaseListener.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T04:07:09.517Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{c6f34f0d-7ae5-4f3a-be61-fe0c21ae9eb8}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Mini_GO_compiler.csproj",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+              "RelativeDocumentMoniker": "Mini_GO_compiler.csproj",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+              "RelativeToolTip": "Mini_GO_compiler.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-05-25T21:45:37.884Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "MainWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\MainWindow.xaml",
+              "RelativeDocumentMoniker": "MainWindow.xaml",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\MainWindow.xaml",
+              "RelativeToolTip": "MainWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-05-25T21:22:53.592Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MainWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\MainWindow.xaml.cs",
+              "RelativeDocumentMoniker": "MainWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\MainWindow.xaml.cs",
+              "RelativeToolTip": "MainWindow.xaml.cs",
+              "ViewState": "AgIAAAQAAAAAAAAAAAAUwBUAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-25T21:22:49.437Z"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

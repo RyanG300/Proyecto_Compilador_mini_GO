@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "Xx9iIqGfbsE=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\ryana\\.nuget\\packages\\antlr4.runtime.standard\\4.13.1\\antlr4.runtime.standard.4.13.1.nupkg.sha512"
+  ],
+  "logs": []
+}

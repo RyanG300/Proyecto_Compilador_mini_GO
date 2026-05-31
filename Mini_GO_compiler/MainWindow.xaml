@@ -4,9 +4,68 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Mini_GO_compiler"
+        xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
+    <Window.Resources>
+        <Style x:Key="buttonStyle" TargetType="Button">
+            <Setter Property="Width" Value="90"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="FontSize" Value="12"></Setter>
+            <Setter Property="BorderBrush" Value="Black"></Setter>
+        </Style>
+    </Window.Resources>
+    
+    
     <Grid>
-
+        <Grid.RowDefinitions>
+            <RowDefinition Height="20"></RowDefinition>
+            <RowDefinition Height="40"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Menu Grid.Row="0">
+           <MenuItem Header="File">
+               <MenuItem Header = "Open folder" HorizontalAlignment = "Left" Width = "180" Click="OpenFolder_click"/>   
+               <MenuItem Header = "Save" HorizontalAlignment = "Left" Width = "180" Click="Save_Click"/>
+               <MenuItem Header = "Exit" HorizontalAlignment = "Left" Width = "180" Click="MenuItem_Exit_Click"/>
+           </MenuItem> 
+            <MenuItem Header="Help">
+                <MenuItem Header = "About" HorizontalAlignment = "Left" Width = "140" Click="MenuItem_About_Click"/> 
+            </MenuItem>
+        </Menu>
+        <StackPanel Orientation="Horizontal" Grid.Row="1">
+            <Button Style="{StaticResource buttonStyle}" Content="💾 Save" Click="Save_Click"></Button>    
+            <Button Style="{StaticResource buttonStyle}" Content="▶ Compile"></Button>
+            <Button Style="{StaticResource buttonStyle}" Width="120" Content="⏩ Compile and run"></Button>
+        </StackPanel>
+        <!--<TextBlock Name="TextBlock1" VerticalAlignment="Bottom">Hello world</TextBlock>-->
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <!--Vista de archivos-->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <StackPanel Background="Gray" Orientation="Vertical" Name="ArchivosView">
+                    <TextBlock Foreground="White" TextAlignment="Center">You have not yet opened a folder</TextBlock>
+                    <Button Style="{StaticResource buttonStyle}" Content="Open folder" Click="OpenFolder_click" Visibility="Visible" Name="OpenFolderButton"></Button>
+                </StackPanel>    
+            </ScrollViewer>
+            <!--Vista archivo-->
+            <Grid Grid.Column="1" Name="ArchivoEdit" >
+                <TextBlock Name="TextBlock1" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Visible">Nothing burger</TextBlock>
+                <avalon:TextEditor x:Name="editor"  
+                                   FontFamily="Consolas" FontSize="12"
+                                   ShowLineNumbers="True"
+                                   SyntaxHighlighting="Custom"
+                                   Visibility="Collapsed"
+                                   >
+                </avalon:TextEditor>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>

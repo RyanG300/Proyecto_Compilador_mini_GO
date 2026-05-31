@@ -1,0 +1,66 @@
+﻿<SyntaxDefinition name="Mini Go" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+    <Color name="Keyword" foreground="#4089D6" fontWeight="bold" />
+    <Color name="Comment" foreground="Green" />
+    <Color name="String" foreground="Brown" />
+    <Color name="Number" foreground="DarkCyan" />
+    <Color name="Operator" foreground="#B8A735" />
+    <Color name="Identifier" foreground="#000000"/>
+    <RuleSet>
+        <!--Palabras reservadas-->
+        <Span color="Keyword" multiline="false">
+            <Begin>\b(package|var|type|func|return|if|else|for|switch|case|default|break|continue|print|println|len|cap|append|struct)\b</Begin>
+            <End> </End>
+        </Span>
+
+        <!-- Comentarios de línea // -->
+        <Span color="Comment">
+            <Begin>//</Begin>
+            <End>$</End>
+        </Span>
+
+        <!-- Comentarios multilínea /* */ -->
+        <Span color="Comment" multiline="true">
+            <Begin>/\*</Begin>
+            <End>\*/</End>
+        </Span>
+
+        <!-- cadenas raw (RAWSTRINGLITERAL)-->
+        <Span color="String" multiline="true">
+            <Begin>`</Begin>
+            <End>`</End>
+        </Span>
+
+        <!-- cadenas interpreted string (INTERPRETEDSTRINGLITERAL)-->
+        <Span color="String" multiline="true">
+            <Begin>"</Begin>
+            <End>"</End>
+        </Span>
+
+        <!-- runas (RUNELITERAL)-->
+        <Span color="String">
+            <Begin>'</Begin>
+            <End>'</End>
+        </Span>
+
+        <!-- Números enteros -->
+        <Rule color="Number">
+            \b[0-9]+(\.[0-9]+)?\b
+        </Rule>
+
+        <!-- Operadores de varios caracteres -->
+        <!-- Operadores de varios caracteres (deben ir antes que los simples) -->
+        <Rule color="Operator">
+            (==|!=|&lt;=|&gt;=|&amp;&amp;|\|\||&lt;&lt;|&gt;&gt;|&amp;^|\+=|-=|\*=|/=|%=|&amp;=|\|=|\^=|&lt;&lt;=|>>=|&amp;^=|\+\+|\-\-|:=)
+        </Rule>
+
+        <!-- Operadores de un solo carácter -->
+        <Rule color="Operator">
+            [=!&lt;&gt;+\-*/%&amp;|^~?:;,.(){}\[\]]
+        </Rule>
+
+        <!-- Identificadores -->
+        <Rule color="Identifier">
+            \b[a-zA-Z_][a-zA-Z0-9_]*\b
+        </Rule>
+    </RuleSet>
+</SyntaxDefinition>

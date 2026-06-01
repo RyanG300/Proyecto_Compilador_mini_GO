@@ -1,0 +1,21 @@
+﻿using Mini_GO_compiler;
+
+// Test de PreCompile
+string testFilePath = @"C:\Users\ryana\Documents\Proyectos_y_varas_locas\Proyecto_Compilador_mini_GO\Mini_GO_compiler\Pruebas\mgo\prueba.mgo";
+
+Console.WriteLine("Probando PreCompile con archivo: " + testFilePath);
+Console.WriteLine("=====================================");
+
+var errors = CompileProcess.PreCompile(testFilePath);
+
+Console.WriteLine($"Número de errores encontrados: {errors.Count}");
+Console.WriteLine("=====================================");
+
+foreach (var error in errors)
+{
+    Console.WriteLine(error);
+}
+
+Console.WriteLine("=====================================");
+Console.WriteLine("Test completado");
+Console.ReadLine();

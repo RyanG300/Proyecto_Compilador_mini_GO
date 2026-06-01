@@ -1,0 +1,5 @@
+package prueba;
+var v = 1;
+func main() {
+	println(v);
+};

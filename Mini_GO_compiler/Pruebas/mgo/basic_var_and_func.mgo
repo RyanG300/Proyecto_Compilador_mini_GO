@@ -1,0 +1,7 @@
+package demo;
+var x = 1;
+func main() {
+print(x);
+println("ok");
+return;
+};

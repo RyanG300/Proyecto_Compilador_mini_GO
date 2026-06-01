@@ -1,0 +1,11 @@
+package bloques;
+func main() {
+{
+var z = 3;
+print(z);
+};
+for ; ; z++ {
+break;
+};
+return;
+};

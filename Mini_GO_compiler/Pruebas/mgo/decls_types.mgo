@@ -1,0 +1,10 @@
+package tipos;
+var a, b int;
+type Numero int;
+type (
+Lista []int;
+Par struct { left int; right int; };
+);
+func makePair(left int, right int) Par {
+return left;
+};

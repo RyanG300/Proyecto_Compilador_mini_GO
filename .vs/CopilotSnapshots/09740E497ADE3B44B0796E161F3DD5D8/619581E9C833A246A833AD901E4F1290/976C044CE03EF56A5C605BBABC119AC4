@@ -1,0 +1,57 @@
+﻿using SyntaxChecker;
+using System.IO;
+using Antlr4.Runtime;
+using Antlr4.Runtime.Tree;
+using Mini_GO_compiler.SyntaxChecker;
+using SyntaxChecker.generated;
+
+namespace Mini_GO_compiler;
+
+public static class CompileProcess
+{
+    public static LinkedList<string> PreCompile(string pathFile)
+    {
+        string typeFile = Path.GetExtension(pathFile).ToLower();
+        if (typeFile.Equals(".mgo"))
+        {
+            string context = File.ReadAllText(pathFile);
+            var inputStream = new AntlrInputStream(context);
+            var lexer = new MiniGoCompilerLexer(inputStream);
+            var tokenStream = new CommonTokenStream(lexer);
+            var parser = new MiniGoCompilerParser(tokenStream);
+
+            MiniGoLexerErrorListener lexerErrorListener = new MiniGoLexerErrorListener();
+            MiniGoErrorListener parserErrorListener = new MiniGoErrorListener();
+
+            lexer.RemoveErrorListeners();
+            lexer.AddErrorListener(lexerErrorListener);
+
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(parserErrorListener);
+
+            // Forzar el parsing completo para que se ejecuten el lexer y parser
+            var tree = parser.root();
+
+            if (lexerErrorListener.HasErrors())
+            {
+                return lexerErrorListener.ErrorList;
+            }
+            else if (parserErrorListener.HasParserErrors())
+            {
+                return parserErrorListener.ErrorParserList;
+            }
+            else
+            {
+                LinkedList<string> list = new LinkedList<string>();
+                list.AddLast("Not implemented (For now everthing is ok)");
+                return list;
+            }
+        }
+        else
+        {
+            LinkedList<string> list = new LinkedList<string>();
+            list.AddLast("Unable to compile, the file type is not \".mgo\"");
+            return list;
+        }
+    }   
+}

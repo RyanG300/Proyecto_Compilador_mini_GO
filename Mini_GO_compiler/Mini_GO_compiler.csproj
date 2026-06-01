@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <Folder Include="NewDirectory1\" />
-    <Folder Include="SyntaxChecker\" />
+    <Folder Include="Pruebas\Prueba_de_carpeta_vacia\" />
   </ItemGroup>
 
   <ItemGroup>

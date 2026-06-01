@@ -1,0 +1,10 @@
+package exprs;
+var base = 4 + 2 * 3;
+func calc(x int) int {
+x = (x << 1) & 7;
+x = x ^ 1;
+x = append(x, 2);
+x = len(x);
+x = cap(x);
+return x;
+};

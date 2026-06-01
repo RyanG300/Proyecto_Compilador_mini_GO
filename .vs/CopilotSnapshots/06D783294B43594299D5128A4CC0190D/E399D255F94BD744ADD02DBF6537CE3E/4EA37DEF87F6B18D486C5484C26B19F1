@@ -1,0 +1,147 @@
+﻿<Window x:Class="Mini_GO_compiler.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Mini_GO_compiler"
+        xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
+        mc:Ignorable="d"
+        Title="Mini Go Compiler v1" Height="600" Width="1000" 
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+
+    <Window.Resources>
+        <!-- Definición de colores -->
+        <SolidColorBrush x:Key="PrimaryColor">#00ADD8</SolidColorBrush>
+        <SolidColorBrush x:Key="SecondaryColor">#5DC9E2</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentColor">#00758F</SolidColorBrush>
+        <SolidColorBrush x:Key="DarkBackground">#2C2C2C</SolidColorBrush>
+        <SolidColorBrush x:Key="LightBackground">#FFFFFF</SolidColorBrush>
+        <SolidColorBrush x:Key="SidebarBackground">#252526</SolidColorBrush>
+        <SolidColorBrush x:Key="ConsoleBackground">#1E1E1E</SolidColorBrush>
+
+        <!-- Estilo para botones de la barra de herramientas -->
+        <Style x:Key="buttonStyle" TargetType="Button">
+            <Setter Property="Width" Value="110"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="Background" Value="{StaticResource PrimaryColor}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Estilo para el botón de abrir carpeta -->
+        <Style x:Key="OpenFolderButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonStyle}">
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+            <Setter Property="Margin" Value="10"/>
+        </Style>
+
+        <!-- Estilo para items del menú -->
+        <Style TargetType="MenuItem">
+            <Setter Property="Padding" Value="10,5"/>
+        </Style>
+    </Window.Resources>
+
+    <!-- Layout principal -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Barra de menú -->
+        <Menu Grid.Row="0" Background="{StaticResource LightBackground}" 
+              BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <MenuItem Header="File" FontSize="13">
+                <MenuItem Header="Open folder" HorizontalAlignment="Left" Width="180" 
+                          Click="OpenFolder_click" Icon="📁"/>   
+                <MenuItem Header="Save" HorizontalAlignment="Left" Width="180" 
+                          Click="Save_Click" Icon="💾"/>
+                <MenuItem Header="Auto save: off" HorizontalAlignment="Left" Width="180" 
+                          Click="Auto_Save_Click" Name="AutoSaveMenuItem" Icon="🔄"/>
+                <Separator/>
+                <MenuItem Header="Exit" HorizontalAlignment="Left" Width="180" 
+                          Click="MenuItem_Exit_Click" Icon="❌"/>
+            </MenuItem> 
+            <MenuItem Header="Help" FontSize="13">
+                <MenuItem Header="About" HorizontalAlignment="Left" Width="140" 
+                          Click="MenuItem_About_Click" Icon="ℹ"/> 
+            </MenuItem>
+        </Menu>
+
+        <!-- Barra de herramientas -->
+        <Border Grid.Row="1" Background="{StaticResource LightBackground}" 
+                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Margin="10,8">
+                <Button Style="{StaticResource buttonStyle}" Content="💾 Save" Click="Save_Click" 
+                        ToolTip="Guardar archivo actual"/>
+                <Button Style="{StaticResource buttonStyle}" Content="▶ Compile" Click="Compile_Click"
+                        ToolTip="Compilar código"/>
+                <Button Style="{StaticResource buttonStyle}" Width="150" Content="⏩ Compile and run"
+                        ToolTip="Compilar y ejecutar"/>
+            </StackPanel>
+        </Border>
+        <!--<TextBlock Name="TextBlock1" VerticalAlignment="Bottom">Hello world</TextBlock>-->
+        <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition></RowDefinition>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <!--Vista de archivos-->
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                <StackPanel Background="Gray" Orientation="Vertical" Name="ArchivosView">
+                    <TextBlock Foreground="White" TextAlignment="Center">You have not yet opened a folder</TextBlock>
+                    <Button Style="{StaticResource buttonStyle}" Content="Open folder" Click="OpenFolder_click" Visibility="Visible" Name="OpenFolderButton"></Button>
+                </StackPanel>    
+            </ScrollViewer>
+            <!--Vista archivo-->
+            <Grid Grid.Column="1" Name="ArchivoEdit" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="70*"></RowDefinition>
+                    <RowDefinition Height="30*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <TextBlock Name="TextBlock1" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Visible">Nothing burger</TextBlock>
+                <avalon:TextEditor x:Name="editor"  
+                                   FontFamily="Consolas" FontSize="12"
+                                   ShowLineNumbers="True"
+                                   SyntaxHighlighting="Custom"
+                                   Visibility="Collapsed"
+                                   >
+                </avalon:TextEditor>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+                    <StackPanel Orientation="Vertical" Background="#454240" Name="CompilePanel">
+                        <TextBlock Background="#E0D5D3" Foreground="Red" FontSize="12">Build errors: 0</TextBlock>
+                    </StackPanel>    
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,17 @@
+package flujo;
+func main() {
+	var i = 0;
+	for i < 10 {
+	i += 1;
+	};
+	if i >= 10 {
+		println("done");
+	} else {
+		println("no");
+	};
+	switch i {
+		case 10: println("ten");
+		default: println("other");
+	};
+	return;
+};

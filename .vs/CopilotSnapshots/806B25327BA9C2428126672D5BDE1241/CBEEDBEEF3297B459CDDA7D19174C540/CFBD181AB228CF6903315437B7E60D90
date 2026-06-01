@@ -1,0 +1,49 @@
+﻿using Antlr4.Runtime;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using SyntaxChecker.generated;
+
+
+namespace Mini_GO_compiler.SyntaxChecker
+{
+    public class MiniGoErrorListener : BaseErrorListener
+    {
+        private LinkedList<string> errorParserList = new LinkedList<string>();
+        private LinkedList<string> errorTypeCheckerList = new LinkedList<string>();
+        
+        public LinkedList<string> ErrorParserList 
+        { 
+            get { return errorParserList; } 
+        }
+
+        public bool HasParserErrors()
+        {
+            return errorParserList.Any();
+        }
+
+        public LinkedList<string> ErrorTypeCheckerList
+        {
+            get { return errorTypeCheckerList; }
+        }
+
+        public bool hasTypeCheckerErrors()
+        {
+            return errorTypeCheckerList.Any();
+        }
+
+        public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine,
+            string msg, RecognitionException e)
+        {
+            if (recognizer is MiniGoCompilerParser)
+            {
+                errorParserList.AddLast($"PARSER ERROR: {msg} en [line {charPositionInLine}:{charPositionInLine}]");
+            }
+        }
+
+        public void reportTypeCheckerError(string error, IToken offendingSymbol)
+        {
+            errorTypeCheckerList.AddLast("TYPE ERROR: " + error + " en (Line: " + offendingSymbol.Line + ", column: "+ offendingSymbol.Column + ")");
+        }
+    }
+}

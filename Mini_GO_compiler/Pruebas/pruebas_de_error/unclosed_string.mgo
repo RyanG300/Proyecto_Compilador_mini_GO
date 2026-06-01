@@ -1,0 +1,4 @@
+package falla;
+func main() {
+println("hola);
+};

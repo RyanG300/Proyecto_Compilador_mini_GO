@@ -4,7 +4,7 @@
     <Color name="String" foreground="Brown" />
     <Color name="Number" foreground="DarkCyan" />
     <Color name="Operator" foreground="#B8A735" />
-    <Color name="Identifier" foreground="#000000"/>
+    <Color name="Identifier" foreground="#FFFFFF"/>
     <RuleSet>
         <!--Palabras reservadas-->
         <Span color="Keyword" multiline="false">

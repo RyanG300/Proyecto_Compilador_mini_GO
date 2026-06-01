@@ -1,0 +1,231 @@
+﻿<Window x:Class="Mini_GO_compiler.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Mini_GO_compiler"
+        xmlns:avalon="http://icsharpcode.net/sharpdevelop/avalonedit"
+        mc:Ignorable="d"
+        Title="Mini Go Compiler v1" Height="600" Width="1000" 
+        WindowStartupLocation="CenterScreen"
+        Background="#F5F5F5">
+
+    <Window.Resources>
+        <!-- Definición de colores -->
+        <SolidColorBrush x:Key="PrimaryColor">#00ADD8</SolidColorBrush>
+        <SolidColorBrush x:Key="SecondaryColor">#5DC9E2</SolidColorBrush>
+        <SolidColorBrush x:Key="AccentColor">#00758F</SolidColorBrush>
+        <SolidColorBrush x:Key="DarkBackground">#2C2C2C</SolidColorBrush>
+        <SolidColorBrush x:Key="LightBackground">#FFFFFF</SolidColorBrush>
+        <SolidColorBrush x:Key="SidebarBackground">#252526</SolidColorBrush>
+        <SolidColorBrush x:Key="ConsoleBackground">#1E1E1E</SolidColorBrush>
+
+        <!-- Estilo para botones de la barra de herramientas -->
+        <Style x:Key="buttonStyle" TargetType="Button">
+            <Setter Property="Width" Value="110"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="5,0"/>
+            <Setter Property="Background" Value="{StaticResource PrimaryColor}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SecondaryColor}"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Estilo para el botón de abrir carpeta -->
+        <Style x:Key="OpenFolderButtonStyle" TargetType="Button" BasedOn="{StaticResource buttonStyle}">
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+            <Setter Property="Margin" Value="10"/>
+        </Style>
+
+        <!-- Estilo para items del menú -->
+        <Style TargetType="MenuItem">
+            <Setter Property="Padding" Value="10,5"/>
+        </Style>
+    </Window.Resources>
+
+    <!-- Layout principal -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Barra de menú -->
+        <Menu Grid.Row="0" Background="{StaticResource LightBackground}" 
+              BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <MenuItem Header="File" FontSize="13">
+                <MenuItem Header="Open folder" HorizontalAlignment="Left" Width="220" 
+                          Click="OpenFolder_click" Icon="📁"/>   
+                <MenuItem Header="Save" HorizontalAlignment="Left" Width="220" 
+                          Click="Save_Click" Icon="💾"/>
+                <MenuItem Header="Auto save: off" HorizontalAlignment="Left" Width="220" 
+                          Click="Auto_Save_Click" Name="AutoSaveMenuItem" Icon="🔄"/>
+                <Separator/>
+                <MenuItem Header="Exit" HorizontalAlignment="Left" Width="220" 
+                          Click="MenuItem_Exit_Click" Icon="❌"/>
+            </MenuItem> 
+            <MenuItem Header="Help" FontSize="13">
+                <MenuItem Header="About" HorizontalAlignment="Left" Width="200" 
+                          Click="MenuItem_About_Click" Icon="ℹ"/> 
+            </MenuItem>
+        </Menu>
+
+        <!-- Barra de herramientas -->
+        <Border Grid.Row="1" Background="{StaticResource LightBackground}" 
+                BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" Margin="10,8">
+                <Button Style="{StaticResource buttonStyle}" Content="💾 Save" Click="Save_Click" 
+                        ToolTip="Guardar archivo actual"/>
+                <Button Style="{StaticResource buttonStyle}" Content="▶ Compile" Click="Compile_Click"
+                        ToolTip="Compilar código"/>
+                <Button Style="{StaticResource buttonStyle}" Width="150" Content="⏩ Compile and run"
+                        ToolTip="Compilar y ejecutar"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Área de trabajo principal -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="260"/>
+                <ColumnDefinition Width="3"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Panel lateral: Explorador de archivos -->
+            <Border Grid.Column="0" Background="{StaticResource SidebarBackground}" 
+                    BorderBrush="#3C3C3C" BorderThickness="0,0,1,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabecera del explorador -->
+                    <Border Grid.Row="0" Background="#323233" Padding="10,8" 
+                            BorderBrush="#3C3C3C" BorderThickness="0,0,0,1">
+                        <TextBlock Text="EXPLORER" Foreground="#CCCCCC" FontSize="11" 
+                                   FontWeight="Bold" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Vista de archivos -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" 
+                                  HorizontalScrollBarVisibility="Auto">
+                        <StackPanel Background="Transparent" Orientation="Vertical" 
+                                    Name="ArchivosView" Margin="10">
+                            <TextBlock Foreground="#CCCCCC" TextAlignment="Center" 
+                                       FontSize="13" Margin="0,20" TextWrapping="Wrap">
+                                You have not yet opened a folder
+                            </TextBlock>
+                            <Button Style="{StaticResource OpenFolderButtonStyle}" 
+                                    Content="📁 Open folder" Click="OpenFolder_click" 
+                                    Visibility="Visible" Name="OpenFolderButton"/>
+                        </StackPanel>    
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- Separador -->
+            <GridSplitter Grid.Column="1" Width="3" HorizontalAlignment="Stretch" 
+                          Background="#3C3C3C" ShowsPreview="True"/>
+
+            <!-- Área principal: Editor y consola -->
+            <Grid Grid.Column="2" Background="#1E1E1E">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="200" MinHeight="100"/>
+                </Grid.RowDefinitions>
+
+                <!-- Área del editor -->
+                <Border Grid.Row="0" BorderBrush="#3C3C3C" BorderThickness="0,0,0,1">
+                    <Grid>
+                        <!-- Mensaje placeholder -->
+                        <Border Background="#1E1E1E">
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <TextBlock Name="TextBlock1" Foreground="#858585" 
+                                           FontSize="16" TextAlignment="Center" 
+                                           Visibility="Visible">
+                                    Nothing burger
+                                </TextBlock>
+                                <TextBlock Name="TextBlock2" Visibility="Visible" Foreground="#656565" FontSize="12" 
+                                           TextAlignment="Center" Margin="0,10">
+                                    Open a file to start editing
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Editor de código -->
+                        <avalon:TextEditor x:Name="editor"  
+                                           FontFamily="Consolas" 
+                                           FontSize="14"
+                                           ShowLineNumbers="True"
+                                           SyntaxHighlighting="Custom"
+                                           Visibility="Collapsed"
+                                           Background="#1E1E1E"
+                                           Foreground="#D4D4D4"
+                                           LineNumbersForeground="#858585"
+                                           Padding="5,5,0,0"/>
+                    </Grid>
+                </Border>
+
+                <!-- Separador consola -->
+                <GridSplitter Grid.Row="1" Height="3" HorizontalAlignment="Stretch" 
+                              Background="#3C3C3C" ShowsPreview="True"/>
+
+                <!-- Panel de consola/salida -->
+                <Grid Grid.Row="2" Background="{StaticResource ConsoleBackground}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Cabecera de la consola -->
+                    <Border Grid.Row="0" Background="#323233" Padding="10,6" 
+                            BorderBrush="#3C3C3C" BorderThickness="0,0,0,1">
+                        <TextBlock Text="OUTPUT" Foreground="#CCCCCC" FontSize="11" 
+                                   FontWeight="Bold"/>
+                    </Border>
+
+                    <!-- Contenido de la consola -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" 
+                                  HorizontalScrollBarVisibility="Auto" 
+                                  Background="Transparent">
+                        <StackPanel Orientation="Vertical" Name="CompilePanel" Margin="5">
+                            <Border Background="#2D2D30" CornerRadius="3" 
+                                    Padding="8,5" Margin="5">
+                                <TextBlock Foreground="#4EC9B0" FontSize="12" 
+                                           FontFamily="Consolas">
+                                    Build errors: 0
+                                </TextBlock>
+                            </Border>
+                        </StackPanel>    
+                    </ScrollViewer>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

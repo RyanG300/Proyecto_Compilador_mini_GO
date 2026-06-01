@@ -18,6 +18,7 @@ using ICSharpCode.AvalonEdit.Highlighting.Xshd;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 using Mini_GO_compiler;
+using Mini_GO_compiler.View.UserControls;
 
 namespace Mini_GO_compiler
 {
@@ -184,12 +185,12 @@ namespace Mini_GO_compiler
             var item1 = new MenuItem{Header = "🔨 New file..."};
             item1.Click += (s, args) =>
             {
-                MessageBox.Show("Prueba 1");
+                CreateFileOrFolder(sender, e, actualDirectory, "file");
             };
             var item2 = new MenuItem { Header = "🔨 New folder..."};
             item2.Click += (s, args) =>
             {
-                MessageBox.Show("Prueba 2");
+                CreateFileOrFolder(sender, e, actualDirectory, "folder");
             };
             var item3 = new MenuItem {Header = "🗑️ Delete folder"};
             item3.Click += (s, args) =>
@@ -235,7 +236,53 @@ namespace Mini_GO_compiler
             contextMenu.Items.Add(item3);
             return contextMenu;
         }
+        
+        private void CreateFileOrFolder(object sender, RoutedEventArgs e, string actualDirectory, string fileOrFolder)
+        {
+            InputFileMessageBox inputFileMessageBox = new InputFileMessageBox((fileOrFolder.Equals("file")) ?"Insert file name":"Insert folder name", (fileOrFolder.Equals("file")) ? "File name":"Folder name",(fileOrFolder.Equals("file")) ? "file.txt":"folder");
+            inputFileMessageBox.Owner = this;
+            if (inputFileMessageBox.ShowDialog() == true)
+            {
+                IEnumerable<string> items = null;
+                if (fileOrFolder.Equals("file"))
+                {
+                     items = Directory.EnumerateFiles(actualDirectory);
+                }
+                else
+                {
+                    items = Directory.EnumerateDirectories(actualDirectory);
+                }
 
+                foreach (string item in items)
+                {
+                    string[] itemParts = item.Split("\\");
+                    string name = itemParts[itemParts.Length - 1];
+                    if (name.Equals(inputFileMessageBox.Answer))
+                    {
+                        MessageBox.Show((fileOrFolder.Equals("file"))?"File "+inputFileMessageBox.Answer+" already exists in "+actualDirectory:"Folder "+inputFileMessageBox.Answer+" already exists in "+actualDirectory,"Error");
+                        return;
+                    }
+                }
+
+                if (fileOrFolder.Equals("file"))
+                {
+                    File.Create(actualDirectory+"\\"+inputFileMessageBox.Answer).Dispose();
+                }
+                else
+                {
+                    Directory.CreateDirectory(actualDirectory+"\\"+inputFileMessageBox.Answer);
+                }
+                ArchivosView.Children.Clear();
+                TextBlock mainDirectory = new TextBlock();
+                mainDirectory.Text = currentDirectory;
+                mainDirectory.TextAlignment = TextAlignment.Center;
+                mainDirectory.Foreground = new SolidColorBrush(Colors.White);
+                ArchivosView.Children.Add(mainDirectory);
+                ShowDirectories(sender, e, ArchivosView,currentDirectory, "");
+                MessageBox.Show((fileOrFolder.Equals("file"))? "File "+inputFileMessageBox.Answer+" successfully created":"Folder "+inputFileMessageBox.Answer+" successfully created");
+            }
+        }
+        
         private void NotSave_file(object sender, RoutedEventArgs e)
         {
            MessageBoxResult result = MessageBox.Show("File not saved, would you like to save it?", "Save", MessageBoxButton.YesNo);

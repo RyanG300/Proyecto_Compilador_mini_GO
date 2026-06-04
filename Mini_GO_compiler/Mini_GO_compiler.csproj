@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
@@ -27,6 +27,7 @@
   <ItemGroup>
     <None Remove="ide\syntaxHighlighter.xml" />
     <EmbeddedResource Include="ide\syntaxHighlighter.xml" />
+    <EmbeddedResource Include="MiniGoSyntax.xshd" />
   </ItemGroup>
 
 </Project>

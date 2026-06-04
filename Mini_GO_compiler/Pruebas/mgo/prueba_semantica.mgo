@@ -1,0 +1,20 @@
+package main;
+
+var global_var int = 10;
+
+func test() {
+    // Error 1: Uso de variable no declarada
+    x = 5;
+
+    // Error 2: Tipos incompatibles en asignacion (string <- int)
+    var y string = 20;
+
+    // Error 3: Doble declaracion de variable en el mismo ambito
+    var y int = 10;
+
+    // Error 4: Tipos incompatibles en operador binario (int + string)
+    var z int = global_var + "hola";
+    
+    // Error 5: Retorno invalido (la funcion no tiene tipo de retorno, es void)
+    return "adios";
+}

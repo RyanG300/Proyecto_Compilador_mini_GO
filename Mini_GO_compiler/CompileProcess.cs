@@ -1,4 +1,4 @@
-﻿using SyntaxChecker;
+using SyntaxChecker;
 using System.IO;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
@@ -51,9 +51,19 @@ public static class CompileProcess
             }
             else
             {
-                LinkedList<string> list = new LinkedList<string>();
-                list.AddLast("Not implemented (For now everthing is ok)");
-                return list;
+                // Análisis Semántico (Type Checker)
+                var typeChecker = new TypeCheckerVisitor();
+                typeChecker.Visit(tree);
+
+                if (typeChecker.HasErrors())
+                {
+                    return typeChecker.ErrorList;
+                }
+                else
+                {
+                    LinkedList<string> list = new LinkedList<string>();
+                    return list;
+                }
             }
     }   
 }

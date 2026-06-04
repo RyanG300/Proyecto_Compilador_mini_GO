@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Windows;
@@ -31,6 +31,7 @@ namespace Mini_GO_compiler
         private string currentDirectory;
         private string currentFile;
         private bool autoSave=false;
+        private TextMarkerService markerService;
         
         public MainWindow()
         {
@@ -41,20 +42,62 @@ namespace Mini_GO_compiler
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             LoadSyntaxHighlighting();
+            SetupErrorMarkers();
+        }
+
+        private void SetupErrorMarkers()
+        {
+            markerService = new TextMarkerService(editor);
+            editor.TextArea.TextView.BackgroundRenderers.Add(markerService);
+        }
+
+        private void AddErrorMarker(int line, int column, string message)
+        {
+            try
+            {
+                var doc = editor.Document;
+                if (line < 1 || line > doc.LineCount) return;
+                var documentLine = doc.GetLineByNumber(line);
+                int start = doc.GetOffset(line, column);
+                int length = Math.Max(1, documentLine.EndOffset - start);
+                markerService.Create(start, length, message);
+            }
+            catch (Exception ex)
+            {
+                // Ignorar errores de offset fuera de rango al agregar el marcador
+                Console.WriteLine("Error adding marker: " + ex.Message);
+            }
+        }
+
+        private void ClearErrorMarkers()
+        {
+            markerService?.RemoveAll(m => true);
         }
 
         private void LoadSyntaxHighlighting()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var resourceName = "Mini_GO_compiler.ide.syntaxHighlighter.xml";
+            var resourceName = "Mini_GO_compiler.MiniGoSyntax.xshd";
             
             using (var stream = assembly.GetManifestResourceStream(resourceName))
-            using (XmlReader reader = XmlReader.Create(stream))
             {
-                var definition = HighlightingLoader.Load(reader, HighlightingManager.Instance); 
-                HighlightingManager.Instance.RegisterHighlighting("Mini Go", new[] { ".go" }, definition);
+                if (stream == null)
+                {
+                    MessageBox.Show("No se encontró el recurso de sintaxis MiniGoSyntax.xshd.");
+                    return;
+                }
+
+                XmlReaderSettings settings = new XmlReaderSettings();
+                settings.XmlResolver = null;
+
+                using (XmlReader reader = XmlReader.Create(stream, settings))
+                {
+                    var xshd = HighlightingLoader.LoadXshd(reader);
+                    var definition = HighlightingLoader.Load(xshd, HighlightingManager.Instance);
+                    HighlightingManager.Instance.RegisterHighlighting("Mini Go", new[] { ".go", ".mgo" }, definition);
+                    editor.SyntaxHighlighting = definition;
+                }
             }
-            editor.SyntaxHighlighting = HighlightingManager.Instance.GetDefinition("Mini Go");
         }
 
         private void OpenFolder_click(object sender, RoutedEventArgs e)
@@ -444,6 +487,7 @@ namespace Mini_GO_compiler
                         errorsNum.Text = "Build errors: " + errorList.Count;
                         border.Child = errorsNum;
                         CompilePanel.Children.Add(border);
+                        ClearErrorMarkers();
                         foreach (var VARIABLE in errorList)
                         {
                             TextBlock error = new TextBlock();
@@ -453,10 +497,29 @@ namespace Mini_GO_compiler
                             error.Margin = new Thickness(8);
                             error.Text = VARIABLE;
                             CompilePanel.Children.Add(error);
+
+                            // Extraer linea y columna para el marcador
+                            var match = System.Text.RegularExpressions.Regex.Match(VARIABLE, @"line\s*:\s*(\d+)\s*-\s*column\s*:\s*(\d+)|line\s+(\d+):(\d+)");
+                            if (match.Success)
+                            {
+                                int line = 1, column = 1;
+                                if (!string.IsNullOrEmpty(match.Groups[1].Value))
+                                {
+                                    line = int.Parse(match.Groups[1].Value);
+                                    column = int.Parse(match.Groups[2].Value);
+                                }
+                                else if (!string.IsNullOrEmpty(match.Groups[3].Value))
+                                {
+                                    line = int.Parse(match.Groups[3].Value);
+                                    column = int.Parse(match.Groups[4].Value);
+                                }
+                                AddErrorMarker(line, column, VARIABLE);
+                            }
                         }
                     }
                     else
                     {
+                        ClearErrorMarkers();
                         TextBlock text = new TextBlock();
                         text.Foreground = new SolidColorBrush(Colors.White);
                         text.FontFamily = new FontFamily("Consolas");

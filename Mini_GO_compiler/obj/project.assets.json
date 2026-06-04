@@ -76,31 +76,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\ryana\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\diana\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+      "projectUniqueName": "C:\\Users\\diana\\OneDrive\\Documents\\Proyecto_Compi_minigo\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
       "projectName": "Mini_GO_compiler",
-      "projectPath": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
-      "packagesPath": "C:\\Users\\ryana\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\obj\\",
+      "projectPath": "C:\\Users\\diana\\OneDrive\\Documents\\Proyecto_Compi_minigo\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+      "packagesPath": "C:\\Users\\diana\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\diana\\OneDrive\\Documents\\Proyecto_Compi_minigo\\Mini_GO_compiler\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\ryana\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\diana\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0-windows"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -119,7 +112,7 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.300"
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
       "net10.0-windows7.0": {
@@ -153,7 +146,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.202/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",

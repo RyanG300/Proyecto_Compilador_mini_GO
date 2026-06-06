@@ -1,0 +1,9 @@
+﻿using SyntaxChecker.generated;
+using LLVMSharp.Interop;
+
+namespace Mini_GO_compiler.Encoder;
+
+public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
+{
+    
+}

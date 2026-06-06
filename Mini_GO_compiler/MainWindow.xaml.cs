@@ -206,6 +206,8 @@ namespace Mini_GO_compiler
                 //Console.WriteLine(context);
                 fileButton.Click += (s, args) =>
                 {
+                    ActualFileName.Text = fileName;
+                    ActualFileContainer.Visibility = Visibility.Visible;
                     string context = File.ReadAllText(file);
                     if (currentFile != null)
                     {
@@ -384,6 +386,7 @@ namespace Mini_GO_compiler
                         editor.Visibility=Visibility.Collapsed;
                         TextBlock1.Visibility=Visibility.Visible;
                         TextBlock2.Visibility=Visibility.Visible;
+                        ActualFileContainer.Visibility=Visibility.Hidden;
                     }
                     File.Delete(actualDirectory);
                     MessageBox.Show("File '"+name+"' successfully deleted");
@@ -466,27 +469,27 @@ namespace Mini_GO_compiler
                 {
                     string context = editor.Text;
                     LinkedList<string> errorList = CompileProcess.PreCompile(context);
+                    CompilePanel.Children.Clear();
+                    var bc = new BrushConverter();
+                        
+                    //---------Border---------
+                    Border border = new Border();
+                    border.Background = (Brush)bc.ConvertFrom("#2D2D30");
+                    border.CornerRadius = new CornerRadius(3);
+                    border.Padding = new Thickness(8, 5, 5 ,5);
+                    border.Margin = new Thickness(5);
+                        
+                    //---------TextBlock---------
+                    TextBlock errorsNum = new TextBlock();
+                    //errorsNum.Background = (Brush)bc.ConvertFrom("#E0D5D3");
+                    errorsNum.Foreground = (Brush)bc.ConvertFrom("#4EC9B0");
+                    errorsNum.FontSize = 12;
+                    errorsNum.FontFamily = new FontFamily("Consolas");
+                    errorsNum.Text = "Build errors: " + errorList.Count;
+                    border.Child = errorsNum;
+                    CompilePanel.Children.Add(border);
                     if (errorList.Count > 0)
                     {
-                        CompilePanel.Children.Clear();
-                        var bc = new BrushConverter();
-                        
-                        //---------Border---------
-                        Border border = new Border();
-                        border.Background = (Brush)bc.ConvertFrom("#2D2D30");
-                        border.CornerRadius = new CornerRadius(3);
-                        border.Padding = new Thickness(8, 5, 5 ,5);
-                        border.Margin = new Thickness(5);
-                        
-                        //---------TextBlock---------
-                        TextBlock errorsNum = new TextBlock();
-                        //errorsNum.Background = (Brush)bc.ConvertFrom("#E0D5D3");
-                        errorsNum.Foreground = (Brush)bc.ConvertFrom("#4EC9B0");
-                        errorsNum.FontSize = 12;
-                        errorsNum.FontFamily = new FontFamily("Consolas");
-                        errorsNum.Text = "Build errors: " + errorList.Count;
-                        border.Child = errorsNum;
-                        CompilePanel.Children.Add(border);
                         ClearErrorMarkers();
                         foreach (var VARIABLE in errorList)
                         {

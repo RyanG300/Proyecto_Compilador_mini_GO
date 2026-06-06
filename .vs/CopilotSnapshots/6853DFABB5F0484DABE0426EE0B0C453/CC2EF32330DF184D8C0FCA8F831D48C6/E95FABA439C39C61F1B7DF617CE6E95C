@@ -1,0 +1,6 @@
+﻿namespace Mini_GO_compiler.Encoder;
+
+public class EncoderVisitor
+{
+    
+}

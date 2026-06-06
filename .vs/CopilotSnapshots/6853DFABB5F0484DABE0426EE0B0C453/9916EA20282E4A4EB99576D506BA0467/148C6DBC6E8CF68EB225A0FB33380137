@@ -1,0 +1,48 @@
+﻿using LLVMSharp.Interop;
+using System;
+
+namespace Mini_GO_compiler.Encoder
+{
+    // Test class to understand LLVMSharp 20.1.2 API
+    public class LLVMTest
+    {
+        public static void TestAPI()
+        {
+            // Test basic types
+            unsafe
+            {
+                var int32 = LLVMTypeRef.Int32;
+                var int64 = LLVMTypeRef.Int64;
+                var dbl = LLVMTypeRef.Double;
+                var boolean = LLVMTypeRef.Int1;
+                var voidType = LLVMTypeRef.Void;
+
+                // Test creating module
+                var mod = LLVMModuleRef.CreateWithName("test");
+
+                // Test creating builder
+                var builder = mod.Context.CreateBuilder();
+
+                // Test creating function
+                var funcType = LLVMTypeRef.CreateFunction(voidType, Array.Empty<LLVMTypeRef>());
+                var func = mod.AddFunction("testfunc", funcType);
+
+                // Test creating basic block
+                var entry = func.AppendBasicBlock("entry");
+                builder.PositionAtEnd(entry);
+
+                // Test creating constant
+                var zero = LLVMValueRef.CreateConstInt(int32, 0, false);
+
+                // Test builder operations
+                builder.BuildRetVoid();
+
+                // Print IR
+                Console.WriteLine(mod.PrintToString());
+
+                builder.Dispose();
+                mod.Dispose();
+            }
+        }
+    }
+}

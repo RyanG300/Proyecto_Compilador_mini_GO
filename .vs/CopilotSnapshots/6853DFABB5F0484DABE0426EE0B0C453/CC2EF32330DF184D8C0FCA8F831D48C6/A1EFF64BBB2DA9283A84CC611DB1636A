@@ -1,0 +1,241 @@
+﻿using SyntaxChecker.generated;
+using LLVMSharp.Interop;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
+namespace Mini_GO_compiler.Encoder;
+
+public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
+{
+    // LLVM core components
+    private LLVMModuleRef module;
+    private LLVMBuilderRef builder;
+
+    // LLVM types (using static properties)
+    private readonly LLVMTypeRef int32Type;
+    private readonly LLVMTypeRef int64Type;
+    private readonly LLVMTypeRef doubleType;
+    private readonly LLVMTypeRef boolType;
+    private readonly LLVMTypeRef voidType;
+    private readonly LLVMTypeRef stringPtrType;
+
+    // Symbol tables
+    private readonly Dictionary<string, LLVMValueRef> functions;
+    private readonly Dictionary<string, LLVMTypeRef> functionTypes;
+    private readonly Stack<Dictionary<string, VariableInfo>> variableScopes;
+
+    // State tracking
+    private LLVMValueRef currentFunction;
+    private string outputDirectory;
+    private int globalStringCounter;
+
+    // Variable information holder
+    private class VariableInfo
+    {
+        public LLVMValueRef Alloca { get; set; }
+        public LLVMTypeRef Type { get; set; }
+
+        public VariableInfo(LLVMValueRef alloca, LLVMTypeRef type)
+        {
+            Alloca = alloca;
+            Type = type;
+        }
+    }
+
+    public EncoderVisitor(string outputDir = null)
+    {
+        this.outputDirectory = outputDir ?? Path.Combine("target", "minigo-output");
+
+        // Initialize LLVM types using static properties
+        this.int32Type = LLVMTypeRef.Int32;
+        this.int64Type = LLVMTypeRef.Int64;
+        this.doubleType = LLVMTypeRef.Double;
+        this.boolType = LLVMTypeRef.Int1;
+        this.voidType = LLVMTypeRef.Void;
+        this.stringPtrType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+
+        // Initialize symbol tables
+        this.functions = new Dictionary<string, LLVMValueRef>();
+        this.functionTypes = new Dictionary<string, LLVMTypeRef>();
+        this.variableScopes = new Stack<Dictionary<string, VariableInfo>>();
+
+        this.globalStringCounter = 0;
+    }
+
+    public string GeneratedLlPath { get; private set; }
+    public string GeneratedExePath { get; private set; }
+
+    // ========== VISITOR METHODS ==========
+
+    public override object VisitRoot(MiniGoCompilerParser.RootContext context)
+    {
+        // Initialize LLVM
+        InitializeLLVM();
+
+        // Create module and builder
+        this.module = LLVMModuleRef.CreateWithName("minigo_module");
+        this.builder = module.Context.CreateBuilder();
+
+        // Clear state
+        this.functions.Clear();
+        this.functionTypes.Clear();
+        this.variableScopes.Clear();
+        this.globalStringCounter = 0;
+
+        // Visit all top-level declarations
+        if (context.topDeclarationList() != null)
+        {
+            Visit(context.topDeclarationList());
+        }
+
+        // Generate output files
+        GenerateOutput();
+
+        // Cleanup
+        builder.Dispose();
+        module.Dispose();
+
+        return null;
+    }
+
+    public override object VisitTopDeclarationList(MiniGoCompilerParser.TopDeclarationListContext context)
+    {
+        // Visit all top-level declarations in order
+        foreach (var varDecl in context.variableDecl())
+        {
+            Visit(varDecl);
+        }
+
+        foreach (var funcDecl in context.funcDecl())
+        {
+            Visit(funcDecl);
+        }
+
+        return null;
+    }
+
+    private void InitializeLLVM()
+    {
+        LLVM.LinkInMCJIT();
+        LLVM.InitializeX86TargetInfo();
+        LLVM.InitializeX86Target();
+        LLVM.InitializeX86TargetMC();
+        LLVM.InitializeX86AsmParser();
+        LLVM.InitializeX86AsmPrinter();
+    }
+
+    private void GenerateOutput()
+    {
+        try
+        {
+            // Create output directory
+            Directory.CreateDirectories(outputDirectory);
+
+            // Write LLVM IR to file
+            string llContent = module.PrintToString();
+            GeneratedLlPath = Path.Combine(outputDirectory, "program.ll");
+            File.WriteAllText(GeneratedLlPath, llContent);
+
+            Console.WriteLine($"LLVM IR generated: {GeneratedLlPath}");
+            Console.WriteLine(llContent);
+
+            // Try to compile with clang if available
+            GeneratedExePath = Path.Combine(outputDirectory, "program.exe");
+            TryCompileWithClang(GeneratedLlPath, GeneratedExePath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating output: {ex.Message}");
+        }
+    }
+
+    private void TryCompileWithClang(string llPath, string exePath)
+    {
+        try
+        {
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "clang",
+                    Arguments = $"\"{llPath}\" -o \"{exePath}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            if (process.ExitCode == 0)
+            {
+                Console.WriteLine($"Executable generated: {exePath}");
+            }
+            else
+            {
+                Console.WriteLine($"Clang compilation failed: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Clang not available: {ex.Message}");
+        }
+    }
+
+    // ========== SCOPE MANAGEMENT ==========
+
+    private void PushScope()
+    {
+        variableScopes.Push(new Dictionary<string, VariableInfo>());
+    }
+
+    private void PopScope()
+    {
+        if (variableScopes.Count > 0)
+        {
+            variableScopes.Pop();
+        }
+    }
+
+    private void PutVariable(string name, VariableInfo info)
+    {
+        if (variableScopes.Count == 0)
+        {
+            PushScope();
+        }
+        variableScopes.Peek()[name] = info;
+    }
+
+    private VariableInfo ResolveVariable(string name)
+    {
+        foreach (var scope in variableScopes)
+        {
+            if (scope.ContainsKey(name))
+            {
+                return scope[name];
+            }
+        }
+        return null;
+    }
+
+    private bool IsInsideFunction()
+    {
+        return currentFunction.Handle != IntPtr.Zero && builder.InsertBlock.Handle != IntPtr.Zero;
+    }
+
+    private bool HasTerminatorInCurrentBlock()
+    {
+        var block = builder.InsertBlock;
+        if (block.Handle == IntPtr.Zero)
+            return false;
+
+        var terminator = block.Terminator;
+        return terminator.Handle != IntPtr.Zero;
+    }
+}

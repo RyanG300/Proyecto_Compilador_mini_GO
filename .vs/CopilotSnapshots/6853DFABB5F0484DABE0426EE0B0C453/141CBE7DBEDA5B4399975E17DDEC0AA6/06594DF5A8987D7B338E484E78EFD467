@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>False</UseWindowsForms>
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+    <PackageReference Include="libLLVM" Version="20.1.1" />
+    <PackageReference Include="LLVMSharp" Version="20.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="NewDirectory1\" />
+    <Folder Include="Pruebas\Prueba_de_carpeta_vacia\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Antlr\MiniGoCompiler.g4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="ide\syntaxHighlighter.xml" />
+    <EmbeddedResource Include="ide\syntaxHighlighter.xml" />
+    <EmbeddedResource Include="MiniGoSyntax.xshd" />
+  </ItemGroup>
+
+</Project>

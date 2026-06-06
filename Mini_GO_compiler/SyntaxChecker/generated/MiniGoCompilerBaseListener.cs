@@ -516,6 +516,18 @@ public partial class MiniGoCompilerBaseListener : IMiniGoCompilerListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitExpressionSwitchCase([NotNull] MiniGoCompilerParser.ExpressionSwitchCaseContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniGoCompilerParser.identifier"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterIdentifier([NotNull] MiniGoCompilerParser.IdentifierContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniGoCompilerParser.identifier"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitIdentifier([NotNull] MiniGoCompilerParser.IdentifierContext context) { }
 
 	/// <inheritdoc/>
 	/// <remarks>The default implementation does nothing.</remarks>

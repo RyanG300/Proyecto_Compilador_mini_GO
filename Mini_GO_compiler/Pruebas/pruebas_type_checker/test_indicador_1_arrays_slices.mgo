@@ -1,0 +1,32 @@
+// PRUEBA - Indicador 1: Arrays, Slices y funciones especiales
+
+package main;
+
+func testArraysAndSlicesCorrect() {
+	var arr [5]int;
+	var slice []int;
+
+	// Casos válidos
+	var x int = len(arr);     // OK: array
+	var y int = len(slice);   // OK: slice
+	var a int = cap(arr);     // OK: array
+	var b int = cap(slice);   // OK: slice
+	var slice2 []int = append(slice, 10);  // OK: slice y elemento int
+
+	println(x);
+	println(y);
+	println(a);
+	println(b);
+};
+
+func testArraysAndSlicesErrors() {
+	// ERRORES:
+	var z int = len(123);     // ERROR: len() requiere array o slice, no int
+	var w int = len("hello"); // ERROR: len() requiere array o slice, no string
+	var c int = cap(42);      // ERROR: cap() requiere array o slice
+
+	var arr [10]int;
+	var slice []int;
+
+	var slice3 []int = append(arr, 10);    // ERROR: append requiere slice, no array
+};

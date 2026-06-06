@@ -1,0 +1,16 @@
+// Prueba Indicador 4: Ningún identificador debe ser declarado dos veces en el mismo ámbito
+// ESTE ARCHIVO DEBE GENERAR ERRORES DE TYPE CHECKER
+
+package main;
+
+func testRedeclaration() {
+	var x int = 10;
+	var x int = 20;  // ERROR: Identifier already defined!
+
+	var a int = 1;
+	var b int = 2;
+	var a string = "hola";  // ERROR: Identifier already defined!
+}
+
+var global int = 5;
+var global float64 = 3.14;  // ERROR: Identifier already defined!

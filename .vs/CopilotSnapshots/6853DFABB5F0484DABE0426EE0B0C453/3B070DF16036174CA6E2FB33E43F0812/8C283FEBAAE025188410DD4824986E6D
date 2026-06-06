@@ -1,0 +1,1277 @@
+﻿using SyntaxChecker.generated;
+using LLVMSharp.Interop;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using static LLVMSharp.Interop.LLVM;
+
+namespace Mini_GO_compiler.Encoder;
+
+public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
+{
+    // LLVM core components
+    private LLVMModuleRef module;
+    private LLVMBuilderRef builder;
+
+    // LLVM types
+    private readonly LLVMTypeRef int32Type;
+    private readonly LLVMTypeRef int64Type;
+    private readonly LLVMTypeRef doubleType;
+    private readonly LLVMTypeRef boolType;
+    private readonly LLVMTypeRef voidType;
+    private readonly LLVMTypeRef stringPtrType;
+
+    // Symbol tables
+    private readonly Dictionary<string, LLVMValueRef> functions;
+    private readonly Dictionary<string, LLVMTypeRef> functionTypes;
+    private readonly Stack<Dictionary<string, VariableInfo>> variableScopes;
+
+    // State tracking
+    private LLVMValueRef currentFunction;
+    private string outputDirectory;
+    private int globalStringCounter;
+
+    // Variable information holder
+    private class VariableInfo
+    {
+        public LLVMValueRef Alloca { get; set; }
+        public LLVMTypeRef Type { get; set; }
+
+        public VariableInfo(LLVMValueRef alloca, LLVMTypeRef type)
+        {
+            Alloca = alloca;
+            Type = type;
+        }
+    }
+
+    public EncoderVisitor(string outputDir = null)
+    {
+        this.outputDirectory = outputDir ?? Path.Combine("target", "minigo-output");
+
+        // Initialize LLVM types
+        this.int32Type = LLVMTypeRef.CreateInt32();
+        this.int64Type = LLVMTypeRef.CreateInt64();
+        this.doubleType = LLVMTypeRef.CreateDouble();
+        this.boolType = LLVMTypeRef.CreateInt1();
+        this.voidType = LLVMTypeRef.CreateVoid();
+        this.stringPtrType = LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateInt8(), 0);
+
+        // Initialize symbol tables
+        this.functions = new Dictionary<string, LLVMValueRef>();
+        this.functionTypes = new Dictionary<string, LLVMTypeRef>();
+        this.variableScopes = new Stack<Dictionary<string, VariableInfo>>();
+
+        this.globalStringCounter = 0;
+    }
+
+    public string GeneratedLlPath { get; private set; }
+    public string GeneratedExePath { get; private set; }
+
+    // ========== VISITOR METHODS ==========
+
+    public override object VisitRoot(MiniGoCompilerParser.RootContext context)
+    {
+        // Initialize LLVM
+        InitializeLLVM();
+
+        // Create module and builder
+        this.module = LLVMModuleRef.CreateWithName("minigo_module");
+        this.builder = module.Context.CreateBuilder();
+
+        // Clear state
+        this.functions.Clear();
+        this.functionTypes.Clear();
+        this.variableScopes.Clear();
+        this.globalStringCounter = 0;
+
+        // Visit all top-level declarations
+        if (context.topDeclarationList() != null)
+        {
+            Visit(context.topDeclarationList());
+        }
+
+        // Generate output files
+        GenerateOutput();
+
+        // Cleanup
+        builder.Dispose();
+        module.Dispose();
+
+        return null;
+    }
+
+    private void InitializeLLVM()
+    {
+        LLVM.LinkInMCJIT();
+        LLVM.InitializeX86TargetInfo();
+        LLVM.InitializeX86Target();
+        LLVM.InitializeX86TargetMC();
+        LLVM.InitializeX86AsmParser();
+        LLVM.InitializeX86AsmPrinter();
+    }
+
+    private void GenerateOutput()
+    {
+        try
+        {
+            // Create output directory
+            Directory.CreateDirectory(outputDirectory);
+
+            // Write LLVM IR to file
+            string llContent = module.PrintToString();
+            GeneratedLlPath = Path.Combine(outputDirectory, "program.ll");
+            File.WriteAllText(GeneratedLlPath, llContent);
+
+            Console.WriteLine($"LLVM IR generated: {GeneratedLlPath}");
+            Console.WriteLine(llContent);
+
+            // Try to compile with clang if available
+            GeneratedExePath = Path.Combine(outputDirectory, "program.exe");
+            TryCompileWithClang(GeneratedLlPath, GeneratedExePath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating output: {ex.Message}");
+        }
+    }
+
+    private void TryCompileWithClang(string llPath, string exePath)
+    {
+        try
+        {
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "clang",
+                    Arguments = $"\"{llPath}\" -o \"{exePath}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            if (process.ExitCode == 0)
+            {
+                Console.WriteLine($"Executable generated: {exePath}");
+            }
+            else
+            {
+                Console.WriteLine($"Clang compilation failed: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Clang not available: {ex.Message}");
+        }
+    }
+
+    public override object VisitTopDeclarationList(MiniGoCompilerParser.TopDeclarationListContext context)
+    {
+        // Visit all top-level declarations in order
+        foreach (var varDecl in context.variableDecl())
+        {
+            Visit(varDecl);
+        }
+
+        foreach (var funcDecl in context.funcDecl())
+        {
+            Visit(funcDecl);
+        }
+
+        return null;
+    }
+
+    // ========== SCOPE MANAGEMENT ==========
+
+    private void PushScope()
+    {
+        variableScopes.Push(new Dictionary<string, VariableInfo>());
+    }
+
+    private void PopScope()
+    {
+        if (variableScopes.Count > 0)
+        {
+            variableScopes.Pop();
+        }
+    }
+
+    private void PutVariable(string name, VariableInfo info)
+    {
+        if (variableScopes.Count == 0)
+        {
+            PushScope();
+        }
+        variableScopes.Peek()[name] = info;
+    }
+
+    private VariableInfo ResolveVariable(string name)
+    {
+        foreach (var scope in variableScopes)
+        {
+            if (scope.ContainsKey(name))
+            {
+                return scope[name];
+            }
+        }
+        return null;
+    }
+
+    private bool IsInsideFunction()
+    {
+        return currentFunction.Handle != IntPtr.Zero && builder.InsertBlock.Handle != IntPtr.Zero;
+    }
+
+    private bool HasTerminatorInCurrentBlock()
+    {
+        var block = builder.InsertBlock;
+        if (block.Handle == IntPtr.Zero)
+            return false;
+
+        var terminator = block.Terminator;
+        return terminator.Handle != IntPtr.Zero;
+    }
+
+    // ========== VARIABLE DECLARATIONS ==========
+
+    public override object VisitVariableDecl(MiniGoCompilerParser.VariableDeclContext context)
+    {
+        if (context.singleVarDecl() != null)
+        {
+            Visit(context.singleVarDecl());
+        }
+        else if (context.innerVarDecls() != null)
+        {
+            Visit(context.innerVarDecls());
+        }
+        return null;
+    }
+
+    public override object VisitInnerVarDecls(MiniGoCompilerParser.InnerVarDeclsContext context)
+    {
+        foreach (var singleVarDecl in context.singleVarDecl())
+        {
+            Visit(singleVarDecl);
+        }
+        return null;
+    }
+
+    public override object VisitSingleVarDecl(MiniGoCompilerParser.SingleVarDeclContext context)
+    {
+        var identifiers = context.identifierList()?.IDENTIFIER() ?? Array.Empty<Antlr4.Runtime.Tree.ITerminalNode>();
+
+        // Case 1: identifierList declType ASSIGN expressionList
+        if (context.declType() != null && context.expressionList() != null)
+        {
+            var type = GetLLVMType(context.declType());
+            var expressions = context.expressionList().expression();
+
+            for (int i = 0; i < identifiers.Length; i++)
+            {
+                string varName = identifiers[i].GetText();
+                LLVMValueRef initValue = i < expressions.Length 
+                    ? (LLVMValueRef)Visit(expressions[i]) 
+                    : GetDefaultValue(type);
+
+                DeclareVariable(varName, type, initValue);
+            }
+        }
+        // Case 2: identifierList ASSIGN expressionList (type inference)
+        else if (context.declType() == null && context.expressionList() != null)
+        {
+            var expressions = context.expressionList().expression();
+
+            for (int i = 0; i < identifiers.Length; i++)
+            {
+                string varName = identifiers[i].GetText();
+                if (i < expressions.Length)
+                {
+                    LLVMValueRef value = (LLVMValueRef)Visit(expressions[i]);
+                    LLVMTypeRef inferredType = value.TypeOf;
+                    DeclareVariable(varName, inferredType, value);
+                }
+            }
+        }
+        // Case 3: singleVarDeclNoExps (just declaration, no initialization)
+        else if (context.singleVarDeclNoExps() != null)
+        {
+            Visit(context.singleVarDeclNoExps());
+        }
+
+        return null;
+    }
+
+    public override object VisitSingleVarDeclNoExps(MiniGoCompilerParser.SingleVarDeclNoExpsContext context)
+    {
+        var identifiers = context.identifierList()?.IDENTIFIER() ?? Array.Empty<Antlr4.Runtime.Tree.ITerminalNode>();
+        var type = GetLLVMType(context.declType());
+
+        foreach (var id in identifiers)
+        {
+            string varName = id.GetText();
+            DeclareVariable(varName, type, null);
+        }
+
+        return null;
+    }
+
+    private void DeclareVariable(string name, LLVMTypeRef type, LLVMValueRef? initValue)
+    {
+        LLVMValueRef storage;
+
+        if (IsInsideFunction())
+        {
+            // Local variable
+            storage = builder.BuildAlloca(type, name);
+            if (initValue.HasValue)
+            {
+                builder.BuildStore(initValue.Value, storage);
+            }
+        }
+        else
+        {
+            // Global variable
+            storage = module.AddGlobal(type, name);
+            if (initValue.HasValue && initValue.Value.IsConstant)
+            {
+                storage.Initializer = initValue.Value;
+            }
+            else
+            {
+                storage.Initializer = GetDefaultValue(type);
+            }
+        }
+
+        PutVariable(name, new VariableInfo(storage, type));
+    }
+
+    private LLVMTypeRef GetLLVMType(MiniGoCompilerParser.DeclTypeContext context)
+    {
+        if (context == null)
+            return int32Type;
+
+        // Simple identifier type
+        if (context.IDENTIFIER() != null)
+        {
+            string typeName = context.IDENTIFIER().GetText();
+            return typeName switch
+            {
+                "int" => int32Type,
+                "float64" => doubleType,
+                "bool" => boolType,
+                "string" => stringPtrType,
+                "rune" => int32Type,
+                _ => int32Type
+            };
+        }
+
+        // Array type: handled in next step
+        if (context.arrayDeclType() != null)
+        {
+            return (LLVMTypeRef)Visit(context.arrayDeclType());
+        }
+
+        // Slice type: not supported in this basic implementation
+        if (context.sliceDeclType() != null)
+        {
+            throw new NotImplementedException("Slices not supported in basic implementation");
+        }
+
+        // Struct type: not supported in this basic implementation
+        if (context.structDeclType() != null)
+        {
+            throw new NotImplementedException("Structs not supported in basic implementation");
+        }
+
+        // Parenthesized type
+        if (context.declType() != null)
+        {
+            return GetLLVMType(context.declType());
+        }
+
+        return int32Type;
+    }
+
+    private LLVMValueRef GetDefaultValue(LLVMTypeRef type)
+    {
+        var kind = type.Kind;
+
+        if (kind == LLVMTypeKind.LLVMIntegerTypeKind)
+        {
+            return LLVMValueRef.CreateConstInt(type, 0, false);
+        }
+        else if (kind == LLVMTypeKind.LLVMDoubleTypeKind)
+        {
+            return LLVMValueRef.CreateConstReal(type, 0.0);
+        }
+        else if (kind == LLVMTypeKind.LLVMPointerTypeKind)
+        {
+            return LLVMValueRef.CreateConstPointerNull(type);
+        }
+        else if (kind == LLVMTypeKind.LLVMArrayTypeKind)
+        {
+            return LLVMValueRef.CreateConstArray(type.ElementType, new LLVMValueRef[type.ArrayLength]);
+        }
+
+        return LLVMValueRef.CreateConstInt(int32Type, 0, false);
+    }
+
+    // ========== ARRAY TYPES ==========
+
+    public override object VisitArrayDeclType(MiniGoCompilerParser.ArrayDeclTypeContext context)
+    {
+        // Array type: [size]elementType
+        int arraySize = int.Parse(context.INTLITERAL().GetText());
+        LLVMTypeRef elementType = GetLLVMType(context.declType());
+
+        // For now, only support arrays of int
+        if (elementType.Handle != int32Type.Handle)
+        {
+            Console.WriteLine("Warning: Only int arrays fully supported, treating as int[]");
+            elementType = int32Type;
+        }
+
+        return LLVMTypeRef.CreateArray(elementType, (uint)arraySize);
+    }
+
+    public override object VisitSliceDeclType(MiniGoCompilerParser.SliceDeclTypeContext context)
+    {
+        throw new NotImplementedException("Slices not supported in basic implementation");
+    }
+
+    // ========== FUNCTION DECLARATIONS ==========
+
+    public override object VisitFuncDecl(MiniGoCompilerParser.FuncDeclContext context)
+    {
+        var frontDecl = context.funcFrontDecl();
+        string funcName = frontDecl.IDENTIFIER().GetText();
+
+        // Determine return type
+        LLVMTypeRef returnType = frontDecl.declType() != null 
+            ? GetLLVMType(frontDecl.declType()) 
+            : voidType;
+
+        // Get parameter types
+        var paramContexts = frontDecl.funcArgDecls()?.singleVarDeclNoExps() 
+            ?? Array.Empty<MiniGoCompilerParser.SingleVarDeclNoExpsContext>();
+
+        var paramTypes = new List<LLVMTypeRef>();
+        var paramNames = new List<string>();
+
+        foreach (var paramCtx in paramContexts)
+        {
+            var paramType = GetLLVMType(paramCtx.declType());
+            var identifiers = paramCtx.identifierList().IDENTIFIER();
+
+            foreach (var id in identifiers)
+            {
+                paramTypes.Add(paramType);
+                paramNames.Add(id.GetText());
+            }
+        }
+
+        // Create function type
+        LLVMTypeRef funcType = LLVMTypeRef.CreateFunction(returnType, paramTypes.ToArray());
+
+        // Add function to module
+        LLVMValueRef function = module.AddFunction(funcName, funcType);
+        functions[funcName] = function;
+        functionTypes[funcName] = funcType;
+
+        // Create entry basic block
+        var entryBlock = function.AppendBasicBlock("entry");
+        builder.PositionAtEnd(entryBlock);
+
+        // Set current function
+        currentFunction = function;
+
+        // Push new scope for function body
+        PushScope();
+
+        // Store parameters as local variables
+        for (int i = 0; i < paramNames.Count; i++)
+        {
+            LLVMTypeRef paramType = paramTypes[i];
+            string paramName = paramNames[i];
+
+            LLVMValueRef alloca = builder.BuildAlloca(paramType, paramName);
+            LLVMValueRef paramValue = function.GetParam((uint)i);
+            builder.BuildStore(paramValue, alloca);
+
+            PutVariable(paramName, new VariableInfo(alloca, paramType));
+        }
+
+        // Visit function body
+        Visit(context.block());
+
+        // Add default return if needed
+        if (!HasTerminatorInCurrentBlock())
+        {
+            if (returnType.Kind == LLVMTypeKind.LLVMVoidTypeKind)
+            {
+                builder.BuildRetVoid();
+            }
+            else
+            {
+                builder.BuildRet(GetDefaultValue(returnType));
+            }
+        }
+
+        // Pop function scope
+        PopScope();
+
+        // Reset current function
+        currentFunction = default;
+
+        return null;
+    }
+
+    public override object VisitFuncFrontDecl(MiniGoCompilerParser.FuncFrontDeclContext context)
+    {
+        // Handled in VisitFuncDecl
+        return null;
+    }
+
+    public override object VisitFuncArgDecls(MiniGoCompilerParser.FuncArgDeclsContext context)
+    {
+        // Handled in VisitFuncDecl
+        return null;
+    }
+
+    // ========== EXPRESSIONS ==========
+
+    public override object VisitExpression(MiniGoCompilerParser.ExpressionContext context)
+    {
+        // Handle unary prefix operators
+        if (context.ADD() != null && context.expression().Length == 1)
+        {
+            // Unary +
+            return Visit(context.expression(0));
+        }
+        else if (context.SUB() != null && context.expression().Length == 1)
+        {
+            // Unary -
+            LLVMValueRef value = (LLVMValueRef)Visit(context.expression(0));
+            return builder.BuildNeg(value, "negtmp");
+        }
+        else if (context.NOT() != null)
+        {
+            // Logical NOT
+            LLVMValueRef value = (LLVMValueRef)Visit(context.expression(0));
+            LLVMValueRef boolValue = EnsureI1(value);
+            return builder.BuildNot(boolValue, "nottmp");
+        }
+        else if (context.BITXOR() != null && context.expression().Length == 1)
+        {
+            // Bitwise NOT
+            LLVMValueRef value = (LLVMValueRef)Visit(context.expression(0));
+            return builder.BuildNot(value, "bitxortmp");
+        }
+
+        // Handle binary operators
+        if (context.expression().Length == 2)
+        {
+            LLVMValueRef left = (LLVMValueRef)Visit(context.expression(0));
+            LLVMValueRef right = (LLVMValueRef)Visit(context.expression(1));
+
+            // Arithmetic operators
+            if (context.ADD() != null)
+                return builder.BuildAdd(left, right, "addtmp");
+            if (context.SUB() != null)
+                return builder.BuildSub(left, right, "subtmp");
+            if (context.MUL() != null)
+                return builder.BuildMul(left, right, "multmp");
+            if (context.DIV() != null)
+                return builder.BuildSDiv(left, right, "divtmp");
+            if (context.MOD() != null)
+                return builder.BuildSRem(left, right, "modtmp");
+
+            // Bitwise operators
+            if (context.AMPERSAND() != null)
+                return builder.BuildAnd(left, right, "andtmp");
+            if (context.BITOR() != null)
+                return builder.BuildOr(left, right, "ortmp");
+            if (context.BITXOR() != null)
+                return builder.BuildXor(left, right, "xortmp");
+
+            // Comparison operators
+            if (context.EQEQ() != null)
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, left, right, "eqtmp");
+            if (context.NOTEQ() != null)
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, left, right, "netmp");
+            if (context.LESS() != null)
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntSLT, left, right, "lttmp");
+            if (context.LESSEQ() != null)
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntSLE, left, right, "letmp");
+            if (context.MORET() != null)
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntSGT, left, right, "gttmp");
+            if (context.MOREEQ() != null)
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntSGE, left, right, "getmp");
+
+            // Logical operators
+            if (context.AND() != null)
+            {
+                LLVMValueRef leftBool = EnsureI1(left);
+                LLVMValueRef rightBool = EnsureI1(right);
+                return builder.BuildAnd(leftBool, rightBool, "andtmp");
+            }
+            if (context.OR() != null)
+            {
+                LLVMValueRef leftBool = EnsureI1(left);
+                LLVMValueRef rightBool = EnsureI1(right);
+                return builder.BuildOr(leftBool, rightBool, "ortmp");
+            }
+        }
+
+        // Default: visit primary expression
+        if (context.primaryExpression() != null)
+        {
+            return Visit(context.primaryExpression());
+        }
+
+        throw new NotImplementedException($"Expression type not implemented: {context.GetText()}");
+    }
+
+    public override object VisitPrimaryExpression(MiniGoCompilerParser.PrimaryExpressionContext context)
+    {
+        // Operand (literal, identifier, or parenthesized expression)
+        if (context.operand() != null)
+        {
+            return Visit(context.operand());
+        }
+
+        // Array/slice indexing
+        if (context.index() != null)
+        {
+            LLVMValueRef array = (LLVMValueRef)Visit(context.primaryExpression());
+            LLVMValueRef indexValue = (LLVMValueRef)Visit(context.index().expression());
+
+            // GEP for array access: indices are [0, indexValue]
+            LLVMValueRef[] indices = new[]
+            {
+                LLVMValueRef.CreateConstInt(int32Type, 0, false),
+                indexValue
+            };
+
+            LLVMValueRef elementPtr = builder.BuildGEP2(
+                array.TypeOf.ElementType, 
+                array, 
+                indices, 
+                "arrayidx"
+            );
+
+            return builder.BuildLoad2(elementPtr.TypeOf.ElementType, elementPtr, "loadelem");
+        }
+
+        // Function call
+        if (context.arguments() != null)
+        {
+            LLVMValueRef funcToCall = (LLVMValueRef)Visit(context.primaryExpression());
+            var args = GetArgumentList(context.arguments());
+
+            string funcName = ""; // Try to get function name if available
+            if (context.primaryExpression()?.operand()?.identifier() != null)
+            {
+                funcName = context.primaryExpression().operand().identifier().GetText();
+            }
+
+            LLVMTypeRef funcType = functionTypes.ContainsKey(funcName) 
+                ? functionTypes[funcName] 
+                : funcToCall.TypeOf;
+
+            return builder.BuildCall2(funcType, funcToCall, args.ToArray(), "calltmp");
+        }
+
+        // Other cases (selector, append, len, cap) not needed for basic implementation
+        throw new NotImplementedException($"Primary expression not implemented: {context.GetText()}");
+    }
+
+    public override object VisitOperand(MiniGoCompilerParser.OperandContext context)
+    {
+        // Literal
+        if (context.literal() != null)
+        {
+            return Visit(context.literal());
+        }
+
+        // Identifier (variable reference)
+        if (context.identifier() != null)
+        {
+            string varName = context.identifier().GetText();
+            var varInfo = ResolveVariable(varName);
+
+            if (varInfo == null)
+            {
+                throw new Exception($"Undefined variable: {varName}");
+            }
+
+            return builder.BuildLoad2(varInfo.Type, varInfo.Alloca, varName + "_val");
+        }
+
+        // Parenthesized expression
+        if (context.expression() != null)
+        {
+            return Visit(context.expression());
+        }
+
+        throw new NotImplementedException($"Operand not implemented: {context.GetText()}");
+    }
+
+    public override object VisitLiteral(MiniGoCompilerParser.LiteralContext context)
+    {
+        if (context.INTLITERAL() != null)
+        {
+            long value = long.Parse(context.INTLITERAL().GetText());
+            return LLVMValueRef.CreateConstInt(int32Type, (ulong)value, false);
+        }
+
+        if (context.FLOATLITERAL() != null)
+        {
+            double value = double.Parse(context.FLOATLITERAL().GetText());
+            return LLVMValueRef.CreateConstReal(doubleType, value);
+        }
+
+        if (context.INTERPRETEDSTRINGLITERAL() != null)
+        {
+            string text = context.INTERPRETEDSTRINGLITERAL().GetText();
+            string content = DecodeStringLiteral(text);
+            return builder.BuildGlobalStringPtr(content, "str");
+        }
+
+        if (context.RAWSTRINGLITERAL() != null)
+        {
+            string text = context.RAWSTRINGLITERAL().GetText();
+            string content = text.Substring(1, text.Length - 2); // Remove backticks
+            return builder.BuildGlobalStringPtr(content, "str");
+        }
+
+        if (context.RUNELITERAL() != null)
+        {
+            string text = context.RUNELITERAL().GetText();
+            char ch = DecodeRuneLiteral(text);
+            return LLVMValueRef.CreateConstInt(int32Type, ch, false);
+        }
+
+        throw new NotImplementedException($"Literal not implemented: {context.GetText()}");
+    }
+
+    public override object VisitExpressionList(MiniGoCompilerParser.ExpressionListContext context)
+    {
+        var results = new List<LLVMValueRef>();
+        foreach (var expr in context.expression())
+        {
+            results.Add((LLVMValueRef)Visit(expr));
+        }
+        return results;
+    }
+
+    private List<LLVMValueRef> GetArgumentList(MiniGoCompilerParser.ArgumentsContext context)
+    {
+        if (context.expressionList() == null)
+            return new List<LLVMValueRef>();
+
+        return (List<LLVMValueRef>)Visit(context.expressionList());
+    }
+
+    private LLVMValueRef EnsureI1(LLVMValueRef value)
+    {
+        if (value.TypeOf.Kind == LLVMTypeKind.LLVMIntegerTypeKind && value.TypeOf.IntWidth == 1)
+        {
+            return value;
+        }
+
+        return builder.BuildICmp(
+            LLVMIntPredicate.LLVMIntNE, 
+            value, 
+            GetDefaultValue(value.TypeOf), 
+            "tobool"
+        );
+    }
+
+    private string DecodeStringLiteral(string raw)
+    {
+        string content = raw.Substring(1, raw.Length - 2); // Remove quotes
+        return content
+            .Replace("\\\\", "\\")
+            .Replace("\\n", "\n")
+            .Replace("\\t", "\t")
+            .Replace("\\r", "\r")
+            .Replace("\\\"", "\"");
+    }
+
+    private char DecodeRuneLiteral(string raw)
+    {
+        string content = raw.Substring(1, raw.Length - 2); // Remove quotes
+        if (content == "\\n") return '\n';
+        if (content == "\\t") return '\t';
+        if (content == "\\r") return '\r';
+        if (content == "\\'") return '\'';
+        if (content == "\\\\") return '\\';
+        return content.Length > 0 ? content[0] : '\0';
+    }
+
+    // ========== STATEMENTS ==========
+
+    public override object VisitBlock(MiniGoCompilerParser.BlockContext context)
+    {
+        PushScope();
+        Visit(context.statementList());
+        PopScope();
+        return null;
+    }
+
+    public override object VisitStatementList(MiniGoCompilerParser.StatementListContext context)
+    {
+        foreach (var stmt in context.statement())
+        {
+            if (HasTerminatorInCurrentBlock())
+                break;
+            Visit(stmt);
+        }
+        return null;
+    }
+
+    public override object VisitStatement(MiniGoCompilerParser.StatementContext context)
+    {
+        // Print statement
+        if (context.PRINT() != null)
+        {
+            var exprs = context.expressionList()?.expression() ?? Array.Empty<MiniGoCompilerParser.ExpressionContext>();
+            foreach (var expr in exprs)
+            {
+                LLVMValueRef value = (LLVMValueRef)Visit(expr);
+                EmitPrint(value, false);
+            }
+            return null;
+        }
+
+        // Println statement
+        if (context.PRINTLN() != null)
+        {
+            var exprs = context.expressionList()?.expression() ?? Array.Empty<MiniGoCompilerParser.ExpressionContext>();
+            foreach (var expr in exprs)
+            {
+                LLVMValueRef value = (LLVMValueRef)Visit(expr);
+                EmitPrint(value, true);
+            }
+            return null;
+        }
+
+        // Return statement
+        if (context.RETURN() != null)
+        {
+            if (context.expression() != null)
+            {
+                LLVMValueRef retValue = (LLVMValueRef)Visit(context.expression());
+                builder.BuildRet(retValue);
+            }
+            else
+            {
+                builder.BuildRetVoid();
+            }
+            return null;
+        }
+
+        // Break and continue not supported
+        if (context.BREAK() != null || context.CONTINUE() != null)
+        {
+            throw new NotImplementedException("Break and continue not supported in basic implementation");
+        }
+
+        // Simple statement (assignment, expression, etc.)
+        if (context.simpleStatement() != null)
+        {
+            return Visit(context.simpleStatement());
+        }
+
+        // Block
+        if (context.block() != null)
+        {
+            return Visit(context.block());
+        }
+
+        // If statement
+        if (context.ifStatement() != null)
+        {
+            return Visit(context.ifStatement());
+        }
+
+        // Loop
+        if (context.loop() != null)
+        {
+            return Visit(context.loop());
+        }
+
+        // Switch not supported
+        if (context.@switch() != null)
+        {
+            throw new NotImplementedException("Switch not supported in basic implementation");
+        }
+
+        // Type and variable declarations
+        if (context.typeDecl() != null)
+        {
+            return Visit(context.typeDecl());
+        }
+
+        if (context.variableDecl() != null)
+        {
+            return Visit(context.variableDecl());
+        }
+
+        return null;
+    }
+
+    public override object VisitSimpleStatement(MiniGoCompilerParser.SimpleStatementContext context)
+    {
+        // Assignment statement
+        if (context.assignmentStatement() != null)
+        {
+            return Visit(context.assignmentStatement());
+        }
+
+        // Expression statement (including ++ and --)
+        if (context.expression() != null)
+        {
+            LLVMValueRef result = (LLVMValueRef)Visit(context.expression());
+
+            // Handle ++ and --
+            if (context.ADDONE() != null)
+            {
+                // Get variable from expression
+                string varName = GetVariableNameFromExpression(context.expression());
+                if (varName != null)
+                {
+                    var varInfo = ResolveVariable(varName);
+                    if (varInfo != null)
+                    {
+                        LLVMValueRef one = LLVMValueRef.CreateConstInt(int32Type, 1, false);
+                        LLVMValueRef newValue = builder.BuildAdd(result, one, "inctmp");
+                        builder.BuildStore(newValue, varInfo.Alloca);
+                    }
+                }
+            }
+            else if (context.SUBONE() != null)
+            {
+                string varName = GetVariableNameFromExpression(context.expression());
+                if (varName != null)
+                {
+                    var varInfo = ResolveVariable(varName);
+                    if (varInfo != null)
+                    {
+                        LLVMValueRef one = LLVMValueRef.CreateConstInt(int32Type, 1, false);
+                        LLVMValueRef newValue = builder.BuildSub(result, one, "dectmp");
+                        builder.BuildStore(newValue, varInfo.Alloca);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        // Short variable declaration (:=)
+        if (context.expressionList().Length == 2 && context.COLONASSIGN() != null)
+        {
+            var leftExprs = context.expressionList(0).expression();
+            var rightExprs = context.expressionList(1).expression();
+
+            for (int i = 0; i < leftExprs.Length; i++)
+            {
+                string varName = GetVariableNameFromExpression(leftExprs[i]);
+                if (varName != null && i < rightExprs.Length)
+                {
+                    LLVMValueRef value = (LLVMValueRef)Visit(rightExprs[i]);
+                    DeclareVariable(varName, value.TypeOf, value);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public override object VisitAssignmentStatement(MiniGoCompilerParser.AssignmentStatementContext context)
+    {
+        // Simple assignment: expressionList ASSIGN expressionList
+        if (context.ASSIGN() != null && context.expressionList() != null)
+        {
+            var leftExprs = context.expressionList(0).expression();
+            var rightExprs = context.expressionList(1).expression();
+
+            for (int i = 0; i < leftExprs.Length && i < rightExprs.Length; i++)
+            {
+                LLVMValueRef value = (LLVMValueRef)Visit(rightExprs[i]);
+                AssignToExpression(leftExprs[i], value);
+            }
+
+            return null;
+        }
+
+        // Compound assignments (+=, -=, etc.)
+        if (context.expression().Length == 2)
+        {
+            LLVMValueRef left = (LLVMValueRef)Visit(context.expression(0));
+            LLVMValueRef right = (LLVMValueRef)Visit(context.expression(1));
+            LLVMValueRef result = null;
+
+            if (context.ADDASSIGN() != null)
+                result = builder.BuildAdd(left, right, "addtmp");
+            else if (context.SUBASSIGN() != null)
+                result = builder.BuildSub(left, right, "subtmp");
+            else if (context.MULASSIGN() != null)
+                result = builder.BuildMul(left, right, "multmp");
+            else if (context.DIVASSIGN() != null)
+                result = builder.BuildSDiv(left, right, "divtmp");
+            else if (context.MODASSIGN() != null)
+                result = builder.BuildSRem(left, right, "modtmp");
+            else if (context.AMPERSANDASSIGN() != null)
+                result = builder.BuildAnd(left, right, "andtmp");
+            else if (context.ORASSIGN() != null)
+                result = builder.BuildOr(left, right, "ortmp");
+            else if (context.XORASSIGN() != null)
+                result = builder.BuildXor(left, right, "xortmp");
+
+            if (result.Handle != IntPtr.Zero)
+            {
+                AssignToExpression(context.expression(0), result);
+            }
+        }
+
+        return null;
+    }
+
+    private void AssignToExpression(MiniGoCompilerParser.ExpressionContext expr, LLVMValueRef value)
+    {
+        // Simple variable assignment
+        if (expr.primaryExpression()?.operand()?.identifier() != null)
+        {
+            string varName = expr.primaryExpression().operand().identifier().GetText();
+            var varInfo = ResolveVariable(varName);
+
+            if (varInfo == null)
+            {
+                throw new Exception($"Undefined variable: {varName}");
+            }
+
+            builder.BuildStore(value, varInfo.Alloca);
+        }
+        // Array element assignment
+        else if (expr.primaryExpression()?.index() != null)
+        {
+            LLVMValueRef array = (LLVMValueRef)Visit(expr.primaryExpression().primaryExpression());
+            LLVMValueRef indexValue = (LLVMValueRef)Visit(expr.primaryExpression().index().expression());
+
+            LLVMValueRef[] indices = new[]
+            {
+                LLVMValueRef.CreateConstInt(int32Type, 0, false),
+                indexValue
+            };
+
+            LLVMValueRef elementPtr = builder.BuildGEP2(
+                array.TypeOf.ElementType, 
+                array, 
+                indices, 
+                "arrayidx"
+            );
+
+            builder.BuildStore(value, elementPtr);
+        }
+    }
+
+    private string GetVariableNameFromExpression(MiniGoCompilerParser.ExpressionContext expr)
+    {
+        if (expr?.primaryExpression()?.operand()?.identifier() != null)
+        {
+            return expr.primaryExpression().operand().identifier().GetText();
+        }
+        return null;
+    }
+
+    // ========== CONTROL FLOW ==========
+
+    public override object VisitIfStatement(MiniGoCompilerParser.IfStatementContext context)
+    {
+        // Get current function
+        LLVMBasicBlockRef currentBlock = builder.InsertBlock;
+        LLVMValueRef function = currentBlock.Parent;
+
+        // Create basic blocks
+        LLVMBasicBlockRef thenBlock = function.AppendBasicBlock("if.then");
+        LLVMBasicBlockRef elseBlock = default;
+        LLVMBasicBlockRef mergeBlock = function.AppendBasicBlock("if.end");
+
+        // Handle optional simple statement before condition
+        if (context.simpleStatement() != null)
+        {
+            Visit(context.simpleStatement());
+        }
+
+        // Evaluate condition
+        LLVMValueRef condition = (LLVMValueRef)Visit(context.expression());
+        LLVMValueRef condBool = EnsureI1(condition);
+
+        // Check if there's an else clause
+        bool hasElse = context.ELSE() != null && context.block().Length > 1;
+        if (hasElse)
+        {
+            elseBlock = function.AppendBasicBlock("if.else");
+            builder.BuildCondBr(condBool, thenBlock, elseBlock);
+        }
+        else
+        {
+            builder.BuildCondBr(condBool, thenBlock, mergeBlock);
+        }
+
+        // Build then block
+        builder.PositionAtEnd(thenBlock);
+        Visit(context.block(0));
+        if (!HasTerminatorInCurrentBlock())
+        {
+            builder.BuildBr(mergeBlock);
+        }
+
+        // Build else block if present
+        if (hasElse)
+        {
+            builder.PositionAtEnd(elseBlock);
+
+            // Check if it's an else-if or else block
+            if (context.ifStatement() != null)
+            {
+                // else if
+                Visit(context.ifStatement());
+            }
+            else
+            {
+                // else block
+                Visit(context.block(1));
+            }
+
+            if (!HasTerminatorInCurrentBlock())
+            {
+                builder.BuildBr(mergeBlock);
+            }
+        }
+
+        // Continue with merge block
+        builder.PositionAtEnd(mergeBlock);
+
+        return null;
+    }
+
+    public override object VisitLoop(MiniGoCompilerParser.LoopContext context)
+    {
+        // Get current function
+        LLVMBasicBlockRef currentBlock = builder.InsertBlock;
+        LLVMValueRef function = currentBlock.Parent;
+
+        // Create basic blocks
+        LLVMBasicBlockRef condBlock = function.AppendBasicBlock("loop.cond");
+        LLVMBasicBlockRef bodyBlock = function.AppendBasicBlock("loop.body");
+        LLVMBasicBlockRef postBlock = default;
+        LLVMBasicBlockRef endBlock = function.AppendBasicBlock("loop.end");
+
+        // Case 1: for { ... } (infinite loop)
+        if (context.expression() == null && context.simpleStatement().Length == 0)
+        {
+            // Jump directly to body
+            builder.BuildBr(bodyBlock);
+
+            builder.PositionAtEnd(bodyBlock);
+            Visit(context.block());
+
+            if (!HasTerminatorInCurrentBlock())
+            {
+                builder.BuildBr(bodyBlock); // Loop back
+            }
+
+            builder.PositionAtEnd(endBlock);
+            return null;
+        }
+
+        // Case 2: for condition { ... }
+        if (context.expression() != null && context.simpleStatement().Length == 0)
+        {
+            builder.BuildBr(condBlock);
+
+            builder.PositionAtEnd(condBlock);
+            LLVMValueRef condition = (LLVMValueRef)Visit(context.expression());
+            LLVMValueRef condBool = EnsureI1(condition);
+            builder.BuildCondBr(condBool, bodyBlock, endBlock);
+
+            builder.PositionAtEnd(bodyBlock);
+            Visit(context.block());
+
+            if (!HasTerminatorInCurrentBlock())
+            {
+                builder.BuildBr(condBlock);
+            }
+
+            builder.PositionAtEnd(endBlock);
+            return null;
+        }
+
+        // Case 3: for init; condition; post { ... } (full for loop)
+        if (context.simpleStatement().Length >= 1)
+        {
+            postBlock = function.AppendBasicBlock("loop.post");
+
+            // Execute init statement
+            if (context.simpleStatement(0) != null)
+            {
+                Visit(context.simpleStatement(0));
+            }
+
+            // Jump to condition
+            builder.BuildBr(condBlock);
+
+            // Condition block
+            builder.PositionAtEnd(condBlock);
+            if (context.expression() != null)
+            {
+                LLVMValueRef condition = (LLVMValueRef)Visit(context.expression());
+                LLVMValueRef condBool = EnsureI1(condition);
+                builder.BuildCondBr(condBool, bodyBlock, endBlock);
+            }
+            else
+            {
+                // No condition means always true
+                builder.BuildBr(bodyBlock);
+            }
+
+            // Body block
+            builder.PositionAtEnd(bodyBlock);
+            Visit(context.block());
+
+            if (!HasTerminatorInCurrentBlock())
+            {
+                builder.BuildBr(postBlock);
+            }
+
+            // Post block (increment/update)
+            builder.PositionAtEnd(postBlock);
+            if (context.simpleStatement().Length >= 2 && context.simpleStatement(1) != null)
+            {
+                Visit(context.simpleStatement(1));
+            }
+
+            if (!HasTerminatorInCurrentBlock())
+            {
+                builder.BuildBr(condBlock);
+            }
+
+            builder.PositionAtEnd(endBlock);
+            return null;
+        }
+
+        builder.PositionAtEnd(endBlock);
+        return null;
+    }
+}

@@ -1,0 +1,569 @@
+﻿using System;
+using System.Collections.Generic;
+using Antlr4.Runtime;
+using SyntaxChecker.generated;
+
+namespace Mini_GO_compiler.TypeChecker
+{
+    public class TypeCheckerVisitor : MiniGoCompilerBaseVisitor<object>
+    {
+        private TablaSimbolos symbolTable;
+        public LinkedList<string> ErrorList { get; private set; }
+        private MiniGoType currentFunctionReturnType = MiniGoType.Error;
+        private bool inFunction = false;
+
+        public TypeCheckerVisitor()
+        {
+            this.symbolTable = new TablaSimbolos();
+            this.ErrorList = new LinkedList<string>();
+        }
+
+        public bool HasErrors() => ErrorList.Count > 0;
+
+        private void ReportError(string msg, IToken offendingToken)
+        {
+            if (offendingToken != null)
+                ErrorList.AddLast($"TYPE ERROR: {msg} ({offendingToken.Text}) [line {offendingToken.Line}:{offendingToken.Column}]");
+            else
+                ErrorList.AddLast($"TYPE ERROR: {msg}");
+        }
+
+        private MiniGoType VerifyType(string typeText)
+        {
+            switch (typeText)
+            {
+                case "int": return MiniGoType.Int;
+                case "float64": 
+                case "float32": return MiniGoType.Float;
+                case "bool": return MiniGoType.Bool;
+                case "string": return MiniGoType.String;
+                case "rune": return MiniGoType.Rune;
+                default: return MiniGoType.Error;
+            }
+        }
+
+        public override object VisitBlock(MiniGoCompilerParser.BlockContext context)
+        {
+            symbolTable.OpenScope();
+            base.VisitBlock(context);
+            symbolTable.CloseScope();
+            return null;
+        }
+
+        public override object VisitVariableDecl(MiniGoCompilerParser.VariableDeclContext context)
+        {
+            return base.VisitVariableDecl(context);
+        }
+
+        public override object VisitSingleVarDecl(MiniGoCompilerParser.SingleVarDeclContext context)
+        {
+            // identifierList declType ASSIGN expressionList
+            // identifierList ASSIGN expressionList
+            // singleVarDeclNoExps
+
+            var identifierListCtx = context.identifierList();
+            var declTypeCtx = context.declType();
+            var expressionListCtx = context.expressionList();
+
+            if (identifierListCtx == null)
+            {
+                return base.VisitSingleVarDecl(context);
+            }
+
+            var ids = identifierListCtx.IDENTIFIER();
+
+            // Caso 1: Con tipo explícito
+            if (declTypeCtx != null)
+            {
+                MiniGoType declaredType = GetDeclType(declTypeCtx);
+
+                if (expressionListCtx != null)
+                {
+                    List<MiniGoType> exprTypes;
+                    try
+                    {
+                        exprTypes = (List<MiniGoType>)Visit(expressionListCtx);
+                    }
+                    catch (TypeErrorException)
+                    {
+                        exprTypes = new List<MiniGoType>();
+                        for (int i = 0; i < ids.Length; i++)
+                            exprTypes.Add(MiniGoType.Error);
+                    }
+
+                    for (int i = 0; i < ids.Length; i++)
+                    {
+                        var idToken = ids[i].Symbol;
+                        if (symbolTable.BuscarNivelActual(idToken.Text) != null)
+                        {
+                            ReportError("Identifier already defined!", idToken);
+                        }
+                        else
+                        {
+                            if (i < exprTypes.Count && exprTypes[i] != declaredType && exprTypes[i] != MiniGoType.Error)
+                            {
+                                ReportError("Invalid types in assign!", idToken);
+                            }
+                            symbolTable.InsertarVariable(idToken, declaredType, context);
+                        }
+                    }
+                }
+                else
+                {
+                    // Sin expresión
+                    foreach (var id in ids)
+                    {
+                        if (symbolTable.BuscarNivelActual(id.Symbol.Text) != null)
+                            ReportError("Identifier already defined!", id.Symbol);
+                        else
+                            symbolTable.InsertarVariable(id.Symbol, declaredType, context);
+                    }
+                }
+            }
+            // Caso 2: Sin tipo, Inferencia
+            else if (expressionListCtx != null)
+            {
+                List<MiniGoType> exprTypes;
+                try
+                {
+                    exprTypes = (List<MiniGoType>)Visit(expressionListCtx);
+                }
+                catch (TypeErrorException)
+                {
+                    exprTypes = new List<MiniGoType>();
+                    for (int i = 0; i < ids.Length; i++)
+                        exprTypes.Add(MiniGoType.Error);
+                }
+
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    var idToken = ids[i].Symbol;
+                    if (symbolTable.BuscarNivelActual(idToken.Text) != null)
+                    {
+                        ReportError("Identifier already defined!", idToken);
+                    }
+                    else
+                    {
+                        MiniGoType inferredType = (i < exprTypes.Count) ? exprTypes[i] : MiniGoType.Error;
+                        symbolTable.InsertarVariable(idToken, inferredType, context);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public override object VisitSingleVarDeclNoExps(MiniGoCompilerParser.SingleVarDeclNoExpsContext context)
+        {
+            var ids = context.identifierList().IDENTIFIER();
+            MiniGoType declaredType = GetDeclType(context.declType());
+            foreach (var id in ids)
+            {
+                if (symbolTable.BuscarNivelActual(id.Symbol.Text) != null)
+                    ReportError("Identifier already defined!", id.Symbol);
+                else
+                    symbolTable.InsertarVariable(id.Symbol, declaredType, context);
+            }
+            return null;
+        }
+
+        private MiniGoType GetDeclType(MiniGoCompilerParser.DeclTypeContext context)
+        {
+            if (context.IDENTIFIER() != null)
+            {
+                return VerifyType(context.IDENTIFIER().GetText());
+            }
+            else if (context.arrayDeclType() != null)
+            {
+                return MiniGoType.IntArray; // Simplificación para la asignación
+            }
+            else if (context.sliceDeclType() != null)
+            {
+                return MiniGoType.Slice;
+            }
+            else if (context.structDeclType() != null)
+            {
+                return MiniGoType.Struct;
+            }
+            else if (context.declType() != null)
+            {
+                return GetDeclType(context.declType());
+            }
+            return MiniGoType.Error;
+        }
+
+        public override object VisitFuncFrontDecl(MiniGoCompilerParser.FuncFrontDeclContext context)
+        {
+            var idToken = context.IDENTIFIER().Symbol;
+            MiniGoType returnType = MiniGoType.Void;
+            
+            if (context.declType() != null)
+            {
+                returnType = GetDeclType(context.declType());
+            }
+
+            LinkedList<MiniGoType> paramTypes = new LinkedList<MiniGoType>();
+            
+            if (symbolTable.BuscarNivelActual(idToken.Text) != null)
+            {
+                ReportError("Method already defined!", idToken);
+            }
+            else
+            {
+                symbolTable.InsertarMetodo(idToken, returnType, paramTypes, context);
+            }
+
+            currentFunctionReturnType = returnType;
+            inFunction = true;
+            
+            symbolTable.OpenScope();
+            
+            // Declarar parametros en el nuevo scope
+            if (context.funcArgDecls() != null)
+            {
+                foreach (var singleDecl in context.funcArgDecls().singleVarDeclNoExps())
+                {
+                    MiniGoType paramType = GetDeclType(singleDecl.declType());
+                    paramTypes.AddLast(paramType);
+                    foreach (var paramId in singleDecl.identifierList().IDENTIFIER())
+                    {
+                        if (symbolTable.BuscarNivelActual(paramId.Symbol.Text) != null)
+                            ReportError("Parameter already defined!", paramId.Symbol);
+                        else
+                            symbolTable.InsertarVariable(paramId.Symbol, paramType, singleDecl);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public override object VisitFuncDecl(MiniGoCompilerParser.FuncDeclContext context)
+        {
+            Visit(context.funcFrontDecl());
+            
+            // No creamos nuevo scope aquí porque ya lo hicimos en FuncFrontDecl para incluir parametros
+            base.VisitBlock(context.block());
+            
+            symbolTable.CloseScope();
+            inFunction = false;
+            currentFunctionReturnType = MiniGoType.Error;
+            
+            return null;
+        }
+
+        public override object VisitExpressionList(MiniGoCompilerParser.ExpressionListContext context)
+        {
+            List<MiniGoType> types = new List<MiniGoType>();
+            foreach (var expr in context.expression())
+            {
+                try
+                {
+                    var type = (MiniGoType)Visit(expr);
+                    types.Add(type);
+                }
+                catch (TypeErrorException)
+                {
+                    types.Add(MiniGoType.Error);
+                }
+            }
+            return types;
+        }
+
+        public override object VisitExpression(MiniGoCompilerParser.ExpressionContext context)
+        {
+            // Este método maneja las operaciones binarias y unarias de expression
+            if (context.primaryExpression() != null)
+            {
+                try
+                {
+                    return Visit(context.primaryExpression());
+                }
+                catch (TypeErrorException)
+                {
+                    return MiniGoType.Error;
+                }
+            }
+
+            if (context.expression().Length == 2)
+            {
+                MiniGoType t1, t2;
+                try
+                {
+                    t1 = (MiniGoType)Visit(context.expression(0));
+                }
+                catch (TypeErrorException)
+                {
+                    t1 = MiniGoType.Error;
+                }
+
+                try
+                {
+                    t2 = (MiniGoType)Visit(context.expression(1));
+                }
+                catch (TypeErrorException)
+                {
+                    t2 = MiniGoType.Error;
+                }
+                
+                // Get the operator string
+                string op = context.GetChild(1).GetText();
+                
+                MiniGoType returnType = MiniGoType.Error;
+                
+                // Reglas simples
+                if (op == "+" || op == "-" || op == "*" || op == "/" || op == "%")
+                {
+                    if (t1 == MiniGoType.Int && t2 == MiniGoType.Int) returnType = MiniGoType.Int;
+                    else if (t1 == MiniGoType.Float && t2 == MiniGoType.Float) returnType = MiniGoType.Float;
+                    else if (op == "+" && t1 == MiniGoType.String && t2 == MiniGoType.String) returnType = MiniGoType.String;
+                }
+                else if (op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || op == ">=")
+                {
+                    if (t1 == t2) returnType = MiniGoType.Bool;
+                }
+                else if (op == "&&" || op == "||")
+                {
+                    if (t1 == MiniGoType.Bool && t2 == MiniGoType.Bool) returnType = MiniGoType.Bool;
+                }
+                else if (op == "<<" || op == ">>" || op == "&" || op == "|" || op == "^" || op == "&^")
+                {
+                    if (t1 == MiniGoType.Int && t2 == MiniGoType.Int) returnType = MiniGoType.Int;
+                }
+
+                if (returnType == MiniGoType.Error && t1 != MiniGoType.Error && t2 != MiniGoType.Error)
+                {
+                    ReportError("Incompatible types for operator " + op, ((Antlr4.Runtime.Tree.TerminalNodeImpl)context.GetChild(1)).Symbol);
+                    throw new TypeErrorException();
+                }
+
+                return returnType;
+            }
+            else if (context.expression().Length == 1)
+            {
+                // Unary operators
+                string op = context.GetChild(0).GetText();
+                MiniGoType t1;
+                try
+                {
+                    t1 = (MiniGoType)Visit(context.expression(0));
+                }
+                catch (TypeErrorException)
+                {
+                    t1 = MiniGoType.Error;
+                }
+                
+                if (op == "!")
+                {
+                    if (t1 == MiniGoType.Bool) return MiniGoType.Bool;
+                }
+                else if (op == "-" || op == "+")
+                {
+                    if (t1 == MiniGoType.Int || t1 == MiniGoType.Float) return t1;
+                }
+                
+                if (t1 != MiniGoType.Error)
+                {
+                    ReportError("Incompatible type for unary operator " + op, ((Antlr4.Runtime.Tree.TerminalNodeImpl)context.GetChild(0)).Symbol);
+                    throw new TypeErrorException();
+                }
+            }
+
+            return MiniGoType.Error;
+        }
+
+        public override object VisitOperand(MiniGoCompilerParser.OperandContext context)
+        {
+            if (context.literal() != null)
+            {
+                return Visit(context.literal());
+            }
+            else if (context.IDENTIFIER() != null)
+            {
+                var idToken = context.IDENTIFIER().Symbol;
+                var ident = symbolTable.Buscar(idToken.Text);
+                if (ident == null)
+                {
+                    ReportError("Undefined identifier!", idToken);
+                    return MiniGoType.Error;
+                }
+                return ident.Type;
+            }
+            else if (context.expression() != null)
+            {
+                try
+                {
+                    return Visit(context.expression());
+                }
+                catch (TypeErrorException)
+                {
+                    return MiniGoType.Error;
+                }
+            }
+            return MiniGoType.Error;
+        }
+
+        public override object VisitLiteral(MiniGoCompilerParser.LiteralContext context)
+        {
+            if (context.INTLITERAL() != null) return MiniGoType.Int;
+            if (context.FLOATLITERAL() != null) return MiniGoType.Float;
+            if (context.RUNELITERAL() != null) return MiniGoType.Rune;
+            if (context.RAWSTRINGLITERAL() != null) return MiniGoType.String;
+            if (context.INTERPRETEDSTRINGLITERAL() != null) return MiniGoType.String;
+            return MiniGoType.Error;
+        }
+
+        public override object VisitAssignmentStatement(MiniGoCompilerParser.AssignmentStatementContext context)
+        {
+            if (context.expressionList().Length == 2)
+            {
+                List<MiniGoType> t1List, t2List;
+                try
+                {
+                    t1List = (List<MiniGoType>)Visit(context.expressionList(0));
+                }
+                catch (TypeErrorException)
+                {
+                    return null;
+                }
+
+                try
+                {
+                    t2List = (List<MiniGoType>)Visit(context.expressionList(1));
+                }
+                catch (TypeErrorException)
+                {
+                    return null;
+                }
+                
+                for (int i = 0; i < Math.Min(t1List.Count, t2List.Count); i++)
+                {
+                    if (t1List[i] != t2List[i] && t1List[i] != MiniGoType.Error && t2List[i] != MiniGoType.Error)
+                    {
+                        var firstExpr = context.expressionList(0).expression(i);
+                        IToken token = null;
+                        if (firstExpr.primaryExpression()?.operand()?.IDENTIFIER() != null)
+                            token = firstExpr.primaryExpression().operand().IDENTIFIER().Symbol;
+                        
+                        ReportError("Invalid types in assign!", token);
+                    }
+                }
+            }
+            return null;
+        }
+
+        public override object VisitStatement(MiniGoCompilerParser.StatementContext context)
+        {
+            if (context.RETURN() != null)
+            {
+                if (!inFunction)
+                {
+                    ReportError("Return outside of a function!", context.RETURN().Symbol);
+                }
+                else
+                {
+                    MiniGoType returnType = MiniGoType.Void;
+                    if (context.expression() != null)
+                    {
+                        try
+                        {
+                            returnType = (MiniGoType)Visit(context.expression());
+                        }
+                        catch (TypeErrorException) {}
+                    }
+
+                    if (returnType != currentFunctionReturnType && returnType != MiniGoType.Error)
+                    {
+                        ReportError("Return type mismatch!", context.RETURN().Symbol);
+                    }
+                }
+            }
+            else if (context.PRINT() != null || context.PRINTLN() != null)
+            {
+                if (context.expressionList() != null)
+                {
+                    Visit(context.expressionList()); // Just to check the expressions are valid
+                }
+            }
+            
+            return base.VisitStatement(context);
+        }
+
+        public override object VisitPrimaryExpression(MiniGoCompilerParser.PrimaryExpressionContext context)
+        {
+            if (context.operand() != null)
+            {
+                try
+                {
+                    return Visit(context.operand());
+                }
+                catch (TypeErrorException)
+                {
+                    return MiniGoType.Error;
+                }
+            }
+            else if (context.lengthExpression() != null)
+            {
+                try
+                {
+                    Visit(context.lengthExpression());
+                }
+                catch (TypeErrorException) { }
+                return MiniGoType.Int; // len() always returns Int
+            }
+            else if (context.capExpression() != null)
+            {
+                try
+                {
+                    Visit(context.capExpression());
+                }
+                catch (TypeErrorException) { }
+                return MiniGoType.Int; // cap() always returns Int
+            }
+            else if (context.appendExpression() != null)
+            {
+                try
+                {
+                    return Visit(context.appendExpression());
+                }
+                catch (TypeErrorException)
+                {
+                    return MiniGoType.Error;
+                }
+            }
+            else if (context.arguments() != null)
+            {
+                // Method call
+                try
+                {
+                    var primaryType = (MiniGoType)Visit(context.primaryExpression());
+                    // We actually need the method identifier to check params, but simplified here
+                    return primaryType;
+                }
+                catch (TypeErrorException)
+                {
+                    return MiniGoType.Error;
+                }
+            }
+
+            try
+            {
+                return base.VisitPrimaryExpression(context);
+            }
+            catch (TypeErrorException)
+            {
+                return MiniGoType.Error;
+            }
+        }
+        
+        public override object VisitLengthExpression(MiniGoCompilerParser.LengthExpressionContext context)
+        {
+            try
+            {
+                Visit(context.expression());
+            }
+            catch (TypeErrorException) { }
+            return MiniGoType.Int;
+        }
+    }
+}

@@ -35,12 +35,12 @@ namespace Mini_GO_compiler.SyntaxChecker
         public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine,
             string msg, RecognitionException e)
         {
-            errorParserList.AddLast($"PARSER ERROR: {msg} en [line {line}:{charPositionInLine}]");
+            errorParserList.AddLast($"PARSER ERROR: {msg} in [line {line}:{charPositionInLine}]");
         }
 
         public void reportTypeCheckerError(string error, IToken offendingSymbol)
         {
-            errorTypeCheckerList.AddLast("TYPE ERROR: " + error + " en (Line: " + offendingSymbol.Line + ", column: "+ offendingSymbol.Column + ")");
+            errorTypeCheckerList.AddLast("TYPE ERROR: " + error + " im (Line: " + offendingSymbol.Line + ", column: "+ offendingSymbol.Column + ")");
         }
     }
 }

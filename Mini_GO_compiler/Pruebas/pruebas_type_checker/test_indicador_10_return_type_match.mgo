@@ -1,0 +1,36 @@
+// Prueba Indicador 10: El tipo de retorno debe coincidir con la declaración
+
+package main;
+
+// Función con tipo de retorno int - válido
+func returnInt() int {
+	return 42;  // OK: retorna int
+};
+
+// Función con tipo de retorno string - válido
+func returnString() string {
+	return "hello";  // OK: retorna string
+};
+
+// Función void - válido
+func noReturn() {
+	println("no return");
+	return;  // OK: return sin valor en función void
+};
+
+// ERRORES: tipos de retorno incorrectos
+func errorReturnInt() int {
+	return "string";  // ERROR: Return type mismatch (esperado int, dado string)
+};
+
+func errorReturnString() string {
+	return 123;  // ERROR: Return type mismatch (esperado string, dado int)
+};
+
+func errorReturnInVoid() {
+	return 5;  // ERROR: Return con valor en función void
+};
+
+func errorReturnFloat() float64 {
+	return 10;  // ERROR: Return type mismatch (esperado float64, dado int)
+};

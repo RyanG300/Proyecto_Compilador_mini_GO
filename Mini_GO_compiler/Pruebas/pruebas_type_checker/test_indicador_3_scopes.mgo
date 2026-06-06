@@ -1,0 +1,24 @@
+// Prueba Indicador 3: Identificadores globales y locales
+// Los identificadores en diferentes ámbitos pueden tener el mismo nombre
+
+package main;
+
+var x int = 10;  // x global
+
+func testScope() {
+	var x int = 20;  // x local (mismo nombre, diferente ámbito)
+	println(x);      // Debe imprimir 20
+
+	{
+		var x int = 30;  // x en otro ámbito anidado
+		println(x);      // Debe imprimir 30
+	};
+
+	println(x);  // Debe imprimir 20
+};
+
+func main() {
+	println(x);  // Debe imprimir 10
+	testScope();
+	println(x);  // Debe imprimir 10
+};

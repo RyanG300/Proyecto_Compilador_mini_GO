@@ -4,6 +4,8 @@ using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using Mini_GO_compiler.SyntaxChecker;
 using SyntaxChecker.generated;
+using Mini_GO_compiler.TypeChecker;
+using Mini_GO_compiler.Encoder;
 
 namespace Mini_GO_compiler;
 
@@ -61,6 +63,8 @@ public static class CompileProcess
                 }
                 else
                 {
+                    //EncoderVisitor encoderVisitor = new EncoderVisitor();
+                    //encoderVisitor.Visit(tree);
                     LinkedList<string> list = new LinkedList<string>();
                     return list;
                 }

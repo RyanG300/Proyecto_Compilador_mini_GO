@@ -1,0 +1,38 @@
+// Prueba Indicador 7: Chequeo de tipos en expresiones
+// Debe validar tipos en operaciones binarias y unarias
+
+package main;
+
+func testTypeCheckingValid() {
+	// Operaciones aritméticas válidas
+	var a int = 10 + 5;
+	var b int = 20 - 3;
+	var c int = 4 * 8;
+	var d int = 100 / 5;
+	var e int = 17 % 3;
+
+	var f float64 = 3.14 + 2.86;
+	var g float64 = 10.5 * 2.0;
+
+	// Operaciones de comparación válidas
+	var h bool = 10 > 5;
+	var i bool = 3 < 7;
+	var j bool = 5 == 5;
+	var k bool = 4 != 9;
+
+	// Operaciones lógicas válidas
+	var l bool = true && false;
+	var m bool = true || false;
+	var n bool = !true;
+
+	// Concatenación de strings
+	var o string = "hello" + " world";
+};
+
+func testTypeCheckingErrors() {
+	// ERRORES: tipos incompatibles
+	var a int = 10 + "string";  // ERROR: tipos incompatibles
+	var b string = "text" * 3;  // ERROR: tipos incompatibles
+	var c bool = 5 > "hello";   // ERROR: tipos incompatibles
+	var d int = true && false;  // ERROR: tipos incompatibles
+};

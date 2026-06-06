@@ -431,5 +431,15 @@ public interface IMiniGoCompilerListener : IParseTreeListener {
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	void ExitExpressionSwitchCase([NotNull] MiniGoCompilerParser.ExpressionSwitchCaseContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniGoCompilerParser.identifier"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterIdentifier([NotNull] MiniGoCompilerParser.IdentifierContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniGoCompilerParser.identifier"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitIdentifier([NotNull] MiniGoCompilerParser.IdentifierContext context);
 }
 } // namespace SyntaxChecker.generated

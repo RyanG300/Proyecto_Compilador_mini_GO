@@ -1,11 +1,27 @@
 {
   "version": 2,
-  "dgSpecHash": "K4331dRlmNE=",
+  "dgSpecHash": "clMe/wHb9zI=",
   "success": true,
-  "projectFilePath": "C:\\Users\\diana\\OneDrive\\Documents\\Proyecto_Compi_minigo\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+  "projectFilePath": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\diana\\.nuget\\packages\\antlr4.runtime.standard\\4.13.1\\antlr4.runtime.standard.4.13.1.nupkg.sha512",
-    "C:\\Users\\diana\\.nuget\\packages\\avalonedit\\6.3.1.120\\avalonedit.6.3.1.120.nupkg.sha512"
+    "C:\\Users\\ryana\\.nuget\\packages\\antlr4.runtime.standard\\4.13.1\\antlr4.runtime.standard.4.13.1.nupkg.sha512",
+    "C:\\Users\\ryana\\.nuget\\packages\\avalonedit\\6.3.1.120\\avalonedit.6.3.1.120.nupkg.sha512",
+    "C:\\Users\\ryana\\.nuget\\packages\\libllvm\\20.1.2\\libllvm.20.1.2.nupkg.sha512",
+    "C:\\Users\\ryana\\.nuget\\packages\\llvmsharp\\20.1.2\\llvmsharp.20.1.2.nupkg.sha512",
+    "C:\\Users\\ryana\\.nuget\\packages\\llvmsharp.interop\\20.1.2\\llvmsharp.interop.20.1.2.nupkg.sha512"
   ],
-  "logs": []
+  "logs": [
+    {
+      "code": "NU1603",
+      "level": "Warning",
+      "message": "Mini_GO_compiler depends on libLLVM (>= 20.1.1) but libLLVM 20.1.1 was not found. libLLVM 20.1.2 was resolved instead.",
+      "projectPath": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+      "warningLevel": 1,
+      "filePath": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+      "libraryId": "libLLVM",
+      "targetGraphs": [
+        "net10.0-windows7.0"
+      ]
+    }
+  ]
 }

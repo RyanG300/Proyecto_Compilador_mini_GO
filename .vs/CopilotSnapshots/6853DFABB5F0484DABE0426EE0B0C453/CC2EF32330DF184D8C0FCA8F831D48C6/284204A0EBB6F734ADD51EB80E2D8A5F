@@ -1,0 +1,69 @@
+﻿using SyntaxChecker.generated;
+using LLVMSharp.Interop;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
+namespace Mini_GO_compiler.Encoder;
+
+public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
+{
+    // LLVM core components
+    private LLVMModuleRef module;
+    private LLVMBuilderRef builder;
+
+    // LLVM types (using static properties)
+    private readonly LLVMTypeRef int32Type;
+    private readonly LLVMTypeRef int64Type;
+    private readonly LLVMTypeRef doubleType;
+    private readonly LLVMTypeRef boolType;
+    private readonly LLVMTypeRef voidType;
+    private readonly LLVMTypeRef stringPtrType;
+
+    // Symbol tables
+    private readonly Dictionary<string, LLVMValueRef> functions;
+    private readonly Dictionary<string, LLVMTypeRef> functionTypes;
+    private readonly Stack<Dictionary<string, VariableInfo>> variableScopes;
+
+    // State tracking
+    private LLVMValueRef currentFunction;
+    private string outputDirectory;
+    private int globalStringCounter;
+
+    // Variable information holder
+    private class VariableInfo
+    {
+        public LLVMValueRef Alloca { get; set; }
+        public LLVMTypeRef Type { get; set; }
+
+        public VariableInfo(LLVMValueRef alloca, LLVMTypeRef type)
+        {
+            Alloca = alloca;
+            Type = type;
+        }
+    }
+
+    public EncoderVisitor(string outputDir = null)
+    {
+        this.outputDirectory = outputDir ?? Path.Combine("target", "minigo-output");
+
+        // Initialize LLVM types using static properties
+        this.int32Type = LLVMTypeRef.Int32;
+        this.int64Type = LLVMTypeRef.Int64;
+        this.doubleType = LLVMTypeRef.Double;
+        this.boolType = LLVMTypeRef.Int1;
+        this.voidType = LLVMTypeRef.Void;
+        this.stringPtrType = LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0);
+
+        // Initialize symbol tables
+        this.functions = new Dictionary<string, LLVMValueRef>();
+        this.functionTypes = new Dictionary<string, LLVMTypeRef>();
+        this.variableScopes = new Stack<Dictionary<string, VariableInfo>>();
+
+        this.globalStringCounter = 0;
+    }
+
+    public string GeneratedLlPath { get; private set; }
+    public string GeneratedExePath { get; private set; }
+}

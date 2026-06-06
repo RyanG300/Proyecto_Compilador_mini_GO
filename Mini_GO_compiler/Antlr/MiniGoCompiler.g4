@@ -104,7 +104,7 @@ variableDecl: VAR singleVarDecl SEMI
               | VAR LEFTP innerVarDecls RIGHTP SEMI
               | VAR LEFTP RIGHTP SEMI; 
 innerVarDecls: singleVarDecl SEMI (singleVarDecl SEMI)*;
-singleVarDecl: identifierList declType ASSIGN expressionList
+singleVarDecl locals[LLVMSharp.Interop.LLVMValueRef[] valorLLVM = null]: identifierList declType ASSIGN expressionList
               | identifierList ASSIGN expressionList
               | singleVarDeclNoExps;
 singleVarDeclNoExps: identifierList declType;
@@ -114,8 +114,8 @@ typeDecl: TYPE singleTypeDecl SEMI
 innerTypeDecls: singleTypeDecl SEMI (singleTypeDecl SEMI)*; 
 singleTypeDecl: IDENTIFIER declType; 
 funcDecl: funcFrontDecl block SEMI;
-funcFrontDecl: FUNC IDENTIFIER LEFTP funcArgDecls? RIGHTP declType?;
-funcArgDecls: singleVarDeclNoExps (COMA singleVarDeclNoExps)*;
+funcFrontDecl locals[LLVMSharp.Interop.LLVMValueRef valorLLVM = null]: FUNC IDENTIFIER LEFTP funcArgDecls? RIGHTP declType?;
+funcArgDecls locals[LLVMSharp.Interop.LLVMValueRef[] valorLLVM = null]: singleVarDeclNoExps (COMA singleVarDeclNoExps)*;
 declType: LEFTP declType RIGHTP
           | IDENTIFIER                     
           | sliceDeclType
@@ -159,7 +159,7 @@ primaryExpression: operand
                    | lengthExpression
                    | capExpression;
 operand: literal
-         | IDENTIFIER
+         | identifier
          | LEFTP expression RIGHTP;
 literal: INTLITERAL								 
 		 | FLOATLITERAL							 
@@ -219,6 +219,7 @@ expressionCaseClauseList: (expressionCaseClause expressionCaseClauseList)?;
 expressionCaseClause: expressionSwitchCase COLON statementList; 
 expressionSwitchCase : CASE expressionList 
 			| DEFAULT;
+identifier locals[ParserRuleContext decl = null] : IDENTIFIER;
  			
 
 			 

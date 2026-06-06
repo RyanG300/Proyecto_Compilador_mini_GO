@@ -1,0 +1,24 @@
+// Prueba Indicador 6: Inferencia de tipos para primitivos
+// La inferencia debe funcionar solo con tipos primitivos
+
+package main;
+
+func testInference() {
+	var a = 10;           // Inferencia: int
+	var b = 3.14;         // Inferencia: float64
+	var c = "hello";      // Inferencia: string
+	var d = true;         // Inferencia: bool
+	var e = 'x';          // Inferencia: rune
+
+	// Uso correcto después de la inferencia
+	var x int = a + 5;    // OK: a es int
+	var y float64 = b * 2.0;  // OK: b es float64
+	var z string = c + " world";  // OK: c es string
+	var w bool = d && false;  // OK: d es bool
+
+	println(a);
+	println(b);
+	println(c);
+	println(d);
+	println(e);
+};

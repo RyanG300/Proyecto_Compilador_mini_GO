@@ -272,5 +272,11 @@ public interface IMiniGoCompilerVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitExpressionSwitchCase([NotNull] MiniGoCompilerParser.ExpressionSwitchCaseContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="MiniGoCompilerParser.identifier"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitIdentifier([NotNull] MiniGoCompilerParser.IdentifierContext context);
 }
 } // namespace SyntaxChecker.generated

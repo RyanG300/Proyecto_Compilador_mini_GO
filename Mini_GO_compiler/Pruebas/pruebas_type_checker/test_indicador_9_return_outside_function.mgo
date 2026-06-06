@@ -1,0 +1,18 @@
+// Prueba Indicador 9: No debe permitir return fuera de una función
+// ESTE ARCHIVO DEBE GENERAR ERRORES DE TYPE CHECKER
+
+package main;
+
+var x int = 10;
+
+// ERROR: Return fuera de función (ámbito global)
+return 5;
+
+func validReturn() int {
+	return 42;  // OK: dentro de función
+};
+
+func main(){
+	var local int = 5;
+	return local;  // ERROR: Return en una función sin retorno
+};

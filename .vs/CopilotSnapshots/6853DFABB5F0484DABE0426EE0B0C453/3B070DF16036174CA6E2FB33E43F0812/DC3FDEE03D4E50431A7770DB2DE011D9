@@ -1,0 +1,548 @@
+﻿using SyntaxChecker.generated;
+using LLVMSharp.Interop;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using static LLVMSharp.Interop.LLVM;
+
+namespace Mini_GO_compiler.Encoder;
+
+public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
+{
+    // LLVM core components
+    private LLVMModuleRef module;
+    private LLVMBuilderRef builder;
+
+    // LLVM types
+    private readonly LLVMTypeRef int32Type;
+    private readonly LLVMTypeRef int64Type;
+    private readonly LLVMTypeRef doubleType;
+    private readonly LLVMTypeRef boolType;
+    private readonly LLVMTypeRef voidType;
+    private readonly LLVMTypeRef stringPtrType;
+
+    // Symbol tables
+    private readonly Dictionary<string, LLVMValueRef> functions;
+    private readonly Dictionary<string, LLVMTypeRef> functionTypes;
+    private readonly Stack<Dictionary<string, VariableInfo>> variableScopes;
+
+    // State tracking
+    private LLVMValueRef currentFunction;
+    private string outputDirectory;
+    private int globalStringCounter;
+
+    // Variable information holder
+    private class VariableInfo
+    {
+        public LLVMValueRef Alloca { get; set; }
+        public LLVMTypeRef Type { get; set; }
+
+        public VariableInfo(LLVMValueRef alloca, LLVMTypeRef type)
+        {
+            Alloca = alloca;
+            Type = type;
+        }
+    }
+
+    public EncoderVisitor(string outputDir = null)
+    {
+        this.outputDirectory = outputDir ?? Path.Combine("target", "minigo-output");
+
+        // Initialize LLVM types
+        this.int32Type = LLVMTypeRef.CreateInt32();
+        this.int64Type = LLVMTypeRef.CreateInt64();
+        this.doubleType = LLVMTypeRef.CreateDouble();
+        this.boolType = LLVMTypeRef.CreateInt1();
+        this.voidType = LLVMTypeRef.CreateVoid();
+        this.stringPtrType = LLVMTypeRef.CreatePointer(LLVMTypeRef.CreateInt8(), 0);
+
+        // Initialize symbol tables
+        this.functions = new Dictionary<string, LLVMValueRef>();
+        this.functionTypes = new Dictionary<string, LLVMTypeRef>();
+        this.variableScopes = new Stack<Dictionary<string, VariableInfo>>();
+
+        this.globalStringCounter = 0;
+    }
+
+    public string GeneratedLlPath { get; private set; }
+    public string GeneratedExePath { get; private set; }
+
+    // ========== VISITOR METHODS ==========
+
+    public override object VisitRoot(MiniGoCompilerParser.RootContext context)
+    {
+        // Initialize LLVM
+        InitializeLLVM();
+
+        // Create module and builder
+        this.module = LLVMModuleRef.CreateWithName("minigo_module");
+        this.builder = module.Context.CreateBuilder();
+
+        // Clear state
+        this.functions.Clear();
+        this.functionTypes.Clear();
+        this.variableScopes.Clear();
+        this.globalStringCounter = 0;
+
+        // Visit all top-level declarations
+        if (context.topDeclarationList() != null)
+        {
+            Visit(context.topDeclarationList());
+        }
+
+        // Generate output files
+        GenerateOutput();
+
+        // Cleanup
+        builder.Dispose();
+        module.Dispose();
+
+        return null;
+    }
+
+    private void InitializeLLVM()
+    {
+        LLVM.LinkInMCJIT();
+        LLVM.InitializeX86TargetInfo();
+        LLVM.InitializeX86Target();
+        LLVM.InitializeX86TargetMC();
+        LLVM.InitializeX86AsmParser();
+        LLVM.InitializeX86AsmPrinter();
+    }
+
+    private void GenerateOutput()
+    {
+        try
+        {
+            // Create output directory
+            Directory.CreateDirectory(outputDirectory);
+
+            // Write LLVM IR to file
+            string llContent = module.PrintToString();
+            GeneratedLlPath = Path.Combine(outputDirectory, "program.ll");
+            File.WriteAllText(GeneratedLlPath, llContent);
+
+            Console.WriteLine($"LLVM IR generated: {GeneratedLlPath}");
+            Console.WriteLine(llContent);
+
+            // Try to compile with clang if available
+            GeneratedExePath = Path.Combine(outputDirectory, "program.exe");
+            TryCompileWithClang(GeneratedLlPath, GeneratedExePath);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating output: {ex.Message}");
+        }
+    }
+
+    private void TryCompileWithClang(string llPath, string exePath)
+    {
+        try
+        {
+            var process = new System.Diagnostics.Process
+            {
+                StartInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "clang",
+                    Arguments = $"\"{llPath}\" -o \"{exePath}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            string output = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            if (process.ExitCode == 0)
+            {
+                Console.WriteLine($"Executable generated: {exePath}");
+            }
+            else
+            {
+                Console.WriteLine($"Clang compilation failed: {error}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Clang not available: {ex.Message}");
+        }
+    }
+
+    public override object VisitTopDeclarationList(MiniGoCompilerParser.TopDeclarationListContext context)
+    {
+        // Visit all top-level declarations in order
+        foreach (var varDecl in context.variableDecl())
+        {
+            Visit(varDecl);
+        }
+
+        foreach (var funcDecl in context.funcDecl())
+        {
+            Visit(funcDecl);
+        }
+
+        return null;
+    }
+
+    // ========== SCOPE MANAGEMENT ==========
+
+    private void PushScope()
+    {
+        variableScopes.Push(new Dictionary<string, VariableInfo>());
+    }
+
+    private void PopScope()
+    {
+        if (variableScopes.Count > 0)
+        {
+            variableScopes.Pop();
+        }
+    }
+
+    private void PutVariable(string name, VariableInfo info)
+    {
+        if (variableScopes.Count == 0)
+        {
+            PushScope();
+        }
+        variableScopes.Peek()[name] = info;
+    }
+
+    private VariableInfo ResolveVariable(string name)
+    {
+        foreach (var scope in variableScopes)
+        {
+            if (scope.ContainsKey(name))
+            {
+                return scope[name];
+            }
+        }
+        return null;
+    }
+
+    private bool IsInsideFunction()
+    {
+        return currentFunction.Handle != IntPtr.Zero && builder.InsertBlock.Handle != IntPtr.Zero;
+    }
+
+    private bool HasTerminatorInCurrentBlock()
+    {
+        var block = builder.InsertBlock;
+        if (block.Handle == IntPtr.Zero)
+            return false;
+
+        var terminator = block.Terminator;
+        return terminator.Handle != IntPtr.Zero;
+    }
+
+    // ========== VARIABLE DECLARATIONS ==========
+
+    public override object VisitVariableDecl(MiniGoCompilerParser.VariableDeclContext context)
+    {
+        if (context.singleVarDecl() != null)
+        {
+            Visit(context.singleVarDecl());
+        }
+        else if (context.innerVarDecls() != null)
+        {
+            Visit(context.innerVarDecls());
+        }
+        return null;
+    }
+
+    public override object VisitInnerVarDecls(MiniGoCompilerParser.InnerVarDeclsContext context)
+    {
+        foreach (var singleVarDecl in context.singleVarDecl())
+        {
+            Visit(singleVarDecl);
+        }
+        return null;
+    }
+
+    public override object VisitSingleVarDecl(MiniGoCompilerParser.SingleVarDeclContext context)
+    {
+        var identifiers = context.identifierList()?.IDENTIFIER() ?? Array.Empty<Antlr4.Runtime.Tree.ITerminalNode>();
+
+        // Case 1: identifierList declType ASSIGN expressionList
+        if (context.declType() != null && context.expressionList() != null)
+        {
+            var type = GetLLVMType(context.declType());
+            var expressions = context.expressionList().expression();
+
+            for (int i = 0; i < identifiers.Length; i++)
+            {
+                string varName = identifiers[i].GetText();
+                LLVMValueRef initValue = i < expressions.Length 
+                    ? (LLVMValueRef)Visit(expressions[i]) 
+                    : GetDefaultValue(type);
+
+                DeclareVariable(varName, type, initValue);
+            }
+        }
+        // Case 2: identifierList ASSIGN expressionList (type inference)
+        else if (context.declType() == null && context.expressionList() != null)
+        {
+            var expressions = context.expressionList().expression();
+
+            for (int i = 0; i < identifiers.Length; i++)
+            {
+                string varName = identifiers[i].GetText();
+                if (i < expressions.Length)
+                {
+                    LLVMValueRef value = (LLVMValueRef)Visit(expressions[i]);
+                    LLVMTypeRef inferredType = value.TypeOf;
+                    DeclareVariable(varName, inferredType, value);
+                }
+            }
+        }
+        // Case 3: singleVarDeclNoExps (just declaration, no initialization)
+        else if (context.singleVarDeclNoExps() != null)
+        {
+            Visit(context.singleVarDeclNoExps());
+        }
+
+        return null;
+    }
+
+    public override object VisitSingleVarDeclNoExps(MiniGoCompilerParser.SingleVarDeclNoExpsContext context)
+    {
+        var identifiers = context.identifierList()?.IDENTIFIER() ?? Array.Empty<Antlr4.Runtime.Tree.ITerminalNode>();
+        var type = GetLLVMType(context.declType());
+
+        foreach (var id in identifiers)
+        {
+            string varName = id.GetText();
+            DeclareVariable(varName, type, null);
+        }
+
+        return null;
+    }
+
+    private void DeclareVariable(string name, LLVMTypeRef type, LLVMValueRef? initValue)
+    {
+        LLVMValueRef storage;
+
+        if (IsInsideFunction())
+        {
+            // Local variable
+            storage = builder.BuildAlloca(type, name);
+            if (initValue.HasValue)
+            {
+                builder.BuildStore(initValue.Value, storage);
+            }
+        }
+        else
+        {
+            // Global variable
+            storage = module.AddGlobal(type, name);
+            if (initValue.HasValue && initValue.Value.IsConstant)
+            {
+                storage.Initializer = initValue.Value;
+            }
+            else
+            {
+                storage.Initializer = GetDefaultValue(type);
+            }
+        }
+
+        PutVariable(name, new VariableInfo(storage, type));
+    }
+
+    private LLVMTypeRef GetLLVMType(MiniGoCompilerParser.DeclTypeContext context)
+    {
+        if (context == null)
+            return int32Type;
+
+        // Simple identifier type
+        if (context.IDENTIFIER() != null)
+        {
+            string typeName = context.IDENTIFIER().GetText();
+            return typeName switch
+            {
+                "int" => int32Type,
+                "float64" => doubleType,
+                "bool" => boolType,
+                "string" => stringPtrType,
+                "rune" => int32Type,
+                _ => int32Type
+            };
+        }
+
+        // Array type: handled in next step
+        if (context.arrayDeclType() != null)
+        {
+            return (LLVMTypeRef)Visit(context.arrayDeclType());
+        }
+
+        // Slice type: not supported in this basic implementation
+        if (context.sliceDeclType() != null)
+        {
+            throw new NotImplementedException("Slices not supported in basic implementation");
+        }
+
+        // Struct type: not supported in this basic implementation
+        if (context.structDeclType() != null)
+        {
+            throw new NotImplementedException("Structs not supported in basic implementation");
+        }
+
+        // Parenthesized type
+        if (context.declType() != null)
+        {
+            return GetLLVMType(context.declType());
+        }
+
+        return int32Type;
+    }
+
+    private LLVMValueRef GetDefaultValue(LLVMTypeRef type)
+    {
+        var kind = type.Kind;
+
+        if (kind == LLVMTypeKind.LLVMIntegerTypeKind)
+        {
+            return LLVMValueRef.CreateConstInt(type, 0, false);
+        }
+        else if (kind == LLVMTypeKind.LLVMDoubleTypeKind)
+        {
+            return LLVMValueRef.CreateConstReal(type, 0.0);
+        }
+        else if (kind == LLVMTypeKind.LLVMPointerTypeKind)
+        {
+            return LLVMValueRef.CreateConstPointerNull(type);
+        }
+        else if (kind == LLVMTypeKind.LLVMArrayTypeKind)
+        {
+            return LLVMValueRef.CreateConstArray(type.ElementType, new LLVMValueRef[type.ArrayLength]);
+        }
+
+        return LLVMValueRef.CreateConstInt(int32Type, 0, false);
+    }
+
+    // ========== ARRAY TYPES ==========
+
+    public override object VisitArrayDeclType(MiniGoCompilerParser.ArrayDeclTypeContext context)
+    {
+        // Array type: [size]elementType
+        int arraySize = int.Parse(context.INTLITERAL().GetText());
+        LLVMTypeRef elementType = GetLLVMType(context.declType());
+
+        // For now, only support arrays of int
+        if (elementType.Handle != int32Type.Handle)
+        {
+            Console.WriteLine("Warning: Only int arrays fully supported, treating as int[]");
+            elementType = int32Type;
+        }
+
+        return LLVMTypeRef.CreateArray(elementType, (uint)arraySize);
+    }
+
+    public override object VisitSliceDeclType(MiniGoCompilerParser.SliceDeclTypeContext context)
+    {
+        throw new NotImplementedException("Slices not supported in basic implementation");
+    }
+
+    // ========== FUNCTION DECLARATIONS ==========
+
+    public override object VisitFuncDecl(MiniGoCompilerParser.FuncDeclContext context)
+    {
+        var frontDecl = context.funcFrontDecl();
+        string funcName = frontDecl.IDENTIFIER().GetText();
+
+        // Determine return type
+        LLVMTypeRef returnType = frontDecl.declType() != null 
+            ? GetLLVMType(frontDecl.declType()) 
+            : voidType;
+
+        // Get parameter types
+        var paramContexts = frontDecl.funcArgDecls()?.singleVarDeclNoExps() 
+            ?? Array.Empty<MiniGoCompilerParser.SingleVarDeclNoExpsContext>();
+
+        var paramTypes = new List<LLVMTypeRef>();
+        var paramNames = new List<string>();
+
+        foreach (var paramCtx in paramContexts)
+        {
+            var paramType = GetLLVMType(paramCtx.declType());
+            var identifiers = paramCtx.identifierList().IDENTIFIER();
+
+            foreach (var id in identifiers)
+            {
+                paramTypes.Add(paramType);
+                paramNames.Add(id.GetText());
+            }
+        }
+
+        // Create function type
+        LLVMTypeRef funcType = LLVMTypeRef.CreateFunction(returnType, paramTypes.ToArray());
+
+        // Add function to module
+        LLVMValueRef function = module.AddFunction(funcName, funcType);
+        functions[funcName] = function;
+        functionTypes[funcName] = funcType;
+
+        // Create entry basic block
+        var entryBlock = function.AppendBasicBlock("entry");
+        builder.PositionAtEnd(entryBlock);
+
+        // Set current function
+        currentFunction = function;
+
+        // Push new scope for function body
+        PushScope();
+
+        // Store parameters as local variables
+        for (int i = 0; i < paramNames.Count; i++)
+        {
+            LLVMTypeRef paramType = paramTypes[i];
+            string paramName = paramNames[i];
+
+            LLVMValueRef alloca = builder.BuildAlloca(paramType, paramName);
+            LLVMValueRef paramValue = function.GetParam((uint)i);
+            builder.BuildStore(paramValue, alloca);
+
+            PutVariable(paramName, new VariableInfo(alloca, paramType));
+        }
+
+        // Visit function body
+        Visit(context.block());
+
+        // Add default return if needed
+        if (!HasTerminatorInCurrentBlock())
+        {
+            if (returnType.Kind == LLVMTypeKind.LLVMVoidTypeKind)
+            {
+                builder.BuildRetVoid();
+            }
+            else
+            {
+                builder.BuildRet(GetDefaultValue(returnType));
+            }
+        }
+
+        // Pop function scope
+        PopScope();
+
+        // Reset current function
+        currentFunction = default;
+
+        return null;
+    }
+
+    public override object VisitFuncFrontDecl(MiniGoCompilerParser.FuncFrontDeclContext context)
+    {
+        // Handled in VisitFuncDecl
+        return null;
+    }
+
+    public override object VisitFuncArgDecls(MiniGoCompilerParser.FuncArgDeclsContext context)
+    {
+        // Handled in VisitFuncDecl
+        return null;
+    }
+}

@@ -1,0 +1,51 @@
+// PRUEBA - Indicador 2: Estructuras tipo registro
+
+package main;
+
+// Definición de estructura usando type
+type Person struct {
+	name string;
+	age int;
+	height float64;
+};
+
+type Point struct {
+	x int;
+	y int;
+};
+
+func testStructsCorrect() {
+	var p Person;
+
+	// Acceso válido a miembros
+	p.name = "John";     // OK: name es string
+	p.age = 30;          // OK: age es int
+	p.height = 1.75;     // OK: height es float64
+
+	var name string = p.name;  // OK: obtener valor del campo
+	var age int = p.age;       // OK: obtener valor del campo
+
+	println(name);
+	println(age);
+};
+
+func testStructsErrors() {
+	var p Person;
+
+	// ERRORES:
+	p.name = 123;        // ERROR: name es string, no int
+	p.age = "thirty";    // ERROR: age es int, no string
+	p.salary = 50000;    // ERROR: Person no tiene campo 'salary'
+	var x int = p.weight; // ERROR: Person no tiene campo 'weight'
+};
+
+func testStructAccess() {
+	var pt Point;
+
+	// Acceso válido
+	pt.x = 10;           // OK: x es int
+	pt.y = 20;           // OK: y es int
+	var sum int = pt.x + pt.y;  // OK: ambos son int
+
+	println(sum);
+};

@@ -1,0 +1,16 @@
+// Prueba Indicador 5: Ningún identificador puede ser utilizado sin ser declarado
+// ESTE ARCHIVO DEBE GENERAR ERRORES DE TYPE CHECKER
+
+package main;
+
+func testUndeclared() {
+	println(x);  // ERROR: Undefined identifier! x
+
+	var y int = z + 10;  // ERROR: Undefined identifier! z
+
+	result = 5 + 3;  // ERROR: Undefined identifier! result
+};
+
+func main() {
+	undefinedFunc();  // ERROR: Undefined identifier! undefinedFunc
+};

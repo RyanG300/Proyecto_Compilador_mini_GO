@@ -1,0 +1,790 @@
+﻿using SyntaxChecker.generated;
+using LLVMSharp.Interop;
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace Mini_GO_compiler.Encoder;
+
+public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
+{
+    private LLVMModuleRef module;
+    private LLVMBuilderRef builder;
+
+    // Tipos LLVM basicos
+    private LLVMTypeRef int32Type;
+    private LLVMTypeRef voidType;
+
+    // Tabla de variables (nombre -> LLVMValueRef)
+    private readonly Stack<Dictionary<string, LLVMValueRef>> scopes;
+
+    // Tabla de tipos de variables (nombre -> LLVMTypeRef del tipo subyacente)
+    private readonly Stack<Dictionary<string, LLVMTypeRef>> typeScopes;
+
+    // Funcion actual
+    private LLVMValueRef currentFunction;
+
+    public EncoderVisitor()
+    {
+        //this.int32Type = LLVMTypeRef.Int32;
+        //this.voidType = LLVMTypeRef.Void;
+        this.scopes = new Stack<Dictionary<string, LLVMValueRef>>();
+        this.typeScopes = new Stack<Dictionary<string, LLVMTypeRef>>();
+    }
+
+    public string GeneratedIR { get; private set; }
+
+    public override object VisitRoot(MiniGoCompilerParser.RootContext context)
+    {
+        // Inicializar LLVM
+        LLVM.LinkInMCJIT();
+        LLVM.InitializeX86TargetInfo();
+        LLVM.InitializeX86Target();
+        LLVM.InitializeX86TargetMC();
+
+        // Crear m�dulo y builder
+        module = LLVMModuleRef.CreateWithName("minigo_module");
+        builder = module.Context.CreateBuilder();
+        
+        // Inicializar tipos LLVM ahora que el contexto esta listo
+        this.int32Type = LLVMTypeRef.Int32;
+        this.voidType = LLVMTypeRef.Void;
+        
+        // Visitar declaraciones
+        if (context.topDeclarationList() != null)
+        {
+            Visit(context.topDeclarationList());
+        }
+
+        // Generar IR
+        GeneratedIR = module.PrintToString();
+        Console.WriteLine("=== LLVM IR Generated ===");
+        Console.WriteLine(GeneratedIR);
+
+        // Guardar a archivo
+        try
+        {
+            string outputDir = Path.Combine("target", "minigo-output");
+            Directory.CreateDirectory(outputDir);
+            string outputPath = Path.Combine(outputDir, "program.ll");
+            File.WriteAllText(outputPath, GeneratedIR);
+            Console.WriteLine($"\nIR saved to: {outputPath}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving IR: {ex.Message}");
+        }
+
+        builder.Dispose();
+        module.Dispose();
+
+        return null;
+    }
+
+    public override object VisitTopDeclarationList(MiniGoCompilerParser.TopDeclarationListContext context)
+    {
+        // Procesar variables globales
+        foreach (var varDecl in context.variableDecl())
+        {
+            Visit(varDecl);
+        }
+
+        // Procesar funciones
+        foreach (var funcDecl in context.funcDecl())
+        {
+            Visit(funcDecl);
+        }
+
+        return null;
+    }
+
+    // ===== FUNCIONES =====
+
+    public override object VisitFuncDecl(MiniGoCompilerParser.FuncDeclContext context)
+    {
+        Visit(context.funcFrontDecl());
+
+        // Crear un nuevo scope para la función
+        scopes.Push(new Dictionary<string, LLVMValueRef>());
+        typeScopes.Push(new Dictionary<string, LLVMTypeRef>());
+
+        // Procesar el bloque de la función
+        if (context.block() != null)
+        {
+            Visit(context.block());
+        }
+
+        // Finalizar la función
+        // Si no hay un return explícito al final, agregar uno
+        if (currentFunction.Handle != IntPtr.Zero)
+        {
+            var lastBlock = currentFunction.LastBasicBlock;
+            if (lastBlock.Handle != IntPtr.Zero)
+            {
+                var terminator = lastBlock.Terminator;
+                if (terminator.Handle == IntPtr.Zero)
+                {
+                    // No hay terminador, agregar return void
+                    builder.BuildRetVoid();
+                }
+            }
+        }
+
+        // Salir del scope de la función
+        scopes.Pop();
+        typeScopes.Pop();
+        currentFunction = default;
+
+        return null;
+    }
+
+    public override object VisitFuncFrontDecl(MiniGoCompilerParser.FuncFrontDeclContext context)
+    {
+        string funcName = context.IDENTIFIER().GetText();
+
+        // Tipo de retorno
+        LLVMTypeRef returnType = voidType;
+        if (context.declType() != null)
+        {
+            returnType = GetLLVMType(context.declType());
+        }
+
+        // Parámetros
+        LLVMTypeRef[] paramTypes = Array.Empty<LLVMTypeRef>();
+        if (context.funcArgDecls() != null)
+        {
+            var argDecls = context.funcArgDecls().singleVarDeclNoExps();
+            paramTypes = new LLVMTypeRef[argDecls.Length];
+            for (int i = 0; i < argDecls.Length; i++)
+            {
+                paramTypes[i] = GetLLVMType(argDecls[i].declType());
+            }
+        }
+
+        // Crear el tipo de función
+        LLVMTypeRef funcType = LLVMTypeRef.CreateFunction(returnType, paramTypes);
+
+        // Agregar la función al módulo
+        currentFunction = module.AddFunction(funcName, funcType);
+
+        // Crear el bloque de entrada
+        LLVMBasicBlockRef entryBlock = currentFunction.AppendBasicBlock("entry");
+        builder.PositionAtEnd(entryBlock);
+
+        // Si hay parámetros, agregarlos a la tabla de símbolos
+        if (context.funcArgDecls() != null)
+        {
+            var argDecls = context.funcArgDecls().singleVarDeclNoExps();
+            for (int i = 0; i < argDecls.Length; i++)
+            {
+                string paramName = argDecls[i].identifierList().IDENTIFIER(0).GetText();
+                LLVMValueRef param = currentFunction.GetParam((uint)i);
+                param.Name = paramName;
+
+                // Obtener el tipo del parámetro
+                LLVMTypeRef paramType = paramTypes[i];
+
+                // Crear una alloca para el parámetro
+                LLVMValueRef alloca = builder.BuildAlloca(paramType, paramName);
+                builder.BuildStore(param, alloca);
+
+                // Agregar a la tabla de símbolos
+                if (scopes.Count > 0)
+                {
+                    scopes.Peek()[paramName] = alloca;
+                    typeScopes.Peek()[paramName] = paramType;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public override object VisitBlock(MiniGoCompilerParser.BlockContext context)
+    {
+        if (context.statementList() != null)
+        {
+            Visit(context.statementList());
+        }
+        return null;
+    }
+
+    public override object VisitStatementList(MiniGoCompilerParser.StatementListContext context)
+    {
+        foreach (var statement in context.statement())
+        {
+            Visit(statement);
+        }
+        return null;
+    }
+
+    public override object VisitStatement(MiniGoCompilerParser.StatementContext context)
+    {
+        // Declaración de variable
+        if (context.variableDecl() != null)
+        {
+            Visit(context.variableDecl());
+        }
+        // Statement simple (asignación, expresión)
+        else if (context.simpleStatement() != null)
+        {
+            Visit(context.simpleStatement());
+        }
+        // Return
+        else if (context.RETURN() != null)
+        {
+            if (context.expression() != null)
+            {
+                var returnValue = Visit(context.expression()) as LLVMValueRef?;
+                if (returnValue.HasValue)
+                {
+                    builder.BuildRet(returnValue.Value);
+                }
+            }
+            else
+            {
+                builder.BuildRetVoid();
+            }
+        }
+        // Block
+        else if (context.block() != null)
+        {
+            scopes.Push(new Dictionary<string, LLVMValueRef>());
+            typeScopes.Push(new Dictionary<string, LLVMTypeRef>());
+            Visit(context.block());
+            scopes.Pop();
+            typeScopes.Pop();
+        }
+
+        return null;
+    }
+
+    public override object VisitVariableDecl(MiniGoCompilerParser.VariableDeclContext context)
+    {
+        if (context.singleVarDecl() != null)
+        {
+            Visit(context.singleVarDecl());
+        }
+        else if (context.innerVarDecls() != null)
+        {
+            foreach (var singleDecl in context.innerVarDecls().singleVarDecl())
+            {
+                Visit(singleDecl);
+            }
+        }
+        return null;
+    }
+
+    public override object VisitSingleVarDecl(MiniGoCompilerParser.SingleVarDeclContext context)
+    {
+        // Manejo de declaraciones sin inicialización: var x int  o  var arr [10]int
+        if (context.singleVarDeclNoExps() != null)
+        {
+            Visit(context.singleVarDeclNoExps());
+        }
+        // Manejo de declaraciones con inicialización: var x int = 1
+        else if (context.declType() != null && context.expressionList() != null)
+        {
+            var identifiers = context.identifierList().IDENTIFIER();
+            var declType = context.declType();
+            var expressions = context.expressionList().expression();
+
+            if (identifiers.Length != expressions.Length)
+            {
+                throw new Exception("Mismatch between identifiers and expressions count");
+            }
+
+            for (int i = 0; i < identifiers.Length; i++)
+            {
+                string varName = identifiers[i].GetText();
+                LLVMTypeRef type = GetLLVMType(declType);
+
+                // Determinar si es global o local
+                bool isGlobal = currentFunction.Handle == IntPtr.Zero;
+
+                LLVMValueRef varRef;
+                if (isGlobal)
+                {
+                    // Variable global con inicializador
+                    varRef = module.AddGlobal(type, varName);
+
+                    // Evaluar la expresión de inicialización (debe ser constante para globales)
+                    var initValue = Visit(expressions[i]) as LLVMValueRef?;
+                    if (initValue.HasValue)
+                    {
+                        varRef.Initializer = initValue.Value;
+                    }
+                    else
+                    {
+                        varRef.Initializer = GetZeroInitializer(type);
+                    }
+                }
+                else
+                {
+                    // Variable local (alloca)
+                    varRef = builder.BuildAlloca(type, varName);
+
+                    // Evaluar la expresión de inicialización y almacenarla
+                    var initValue = Visit(expressions[i]) as LLVMValueRef?;
+                    if (initValue.HasValue)
+                    {
+                        builder.BuildStore(initValue.Value, varRef);
+                    }
+                }
+
+                // Guardar en la tabla de símbolos
+                if (scopes.Count > 0)
+                {
+                    scopes.Peek()[varName] = varRef;
+                    typeScopes.Peek()[varName] = type;
+                }
+                else
+                {
+                    var globalScope = new Dictionary<string, LLVMValueRef>();
+                    globalScope[varName] = varRef;
+                    scopes.Push(globalScope);
+
+                    var globalTypeScope = new Dictionary<string, LLVMTypeRef>();
+                    globalTypeScope[varName] = type;
+                    typeScopes.Push(globalTypeScope);
+                }
+            }
+        }
+        return null;
+    }
+
+    public override object VisitSingleVarDeclNoExps(MiniGoCompilerParser.SingleVarDeclNoExpsContext context)
+    {
+        var identifiers = context.identifierList().IDENTIFIER();
+        var declType = context.declType();
+
+        foreach (var id in identifiers)
+        {
+            string varName = id.GetText();
+            LLVMTypeRef type = GetLLVMType(declType);
+
+            // Determinar si es global o local
+            bool isGlobal = currentFunction.Handle == IntPtr.Zero;
+
+            LLVMValueRef varRef;
+            if (isGlobal)
+            {
+                // Variable global
+                varRef = module.AddGlobal(type, varName);
+                varRef.Initializer = GetZeroInitializer(type);
+            }
+            else
+            {
+                // Variable local (alloca)
+                varRef = builder.BuildAlloca(type, varName);
+            }
+
+            // Guardar en la tabla de s�mbolos
+            if (scopes.Count > 0)
+            {
+                scopes.Peek()[varName] = varRef;
+                typeScopes.Peek()[varName] = type;
+            }
+            else
+            {
+                var globalScope = new Dictionary<string, LLVMValueRef>();
+                globalScope[varName] = varRef;
+                scopes.Push(globalScope);
+
+                var globalTypeScope = new Dictionary<string, LLVMTypeRef>();
+                globalTypeScope[varName] = type;
+                typeScopes.Push(globalTypeScope);
+            }
+        }
+
+        return null;
+    }
+
+    private LLVMTypeRef GetLLVMType(MiniGoCompilerParser.DeclTypeContext context)
+    {
+        // Tipo simple: int
+        if (context.IDENTIFIER() != null)
+        {
+            string typeName = context.IDENTIFIER().GetText();
+            if (typeName == "int")
+            {
+                return int32Type;
+            }
+            throw new Exception($"Type not supported: {typeName}");
+        }
+
+        // Array: [N]int
+        if (context.arrayDeclType() != null)
+        {
+            var arrayCtx = context.arrayDeclType();
+            int size = int.Parse(arrayCtx.INTLITERAL().GetText());
+
+            // Verificar que el tipo elemento sea int
+            var elemType = GetLLVMType(arrayCtx.declType());
+            if (elemType.Handle != int32Type.Handle)
+            {
+                throw new Exception("Only int arrays supported");
+            }
+
+            return LLVMTypeRef.CreateArray(elemType, (uint)size);
+        }
+
+        throw new Exception("Unsupported type declaration");
+    }
+
+    private LLVMValueRef GetZeroInitializer(LLVMTypeRef type)
+    {
+        if (type.Kind == LLVMTypeKind.LLVMIntegerTypeKind)
+        {
+            return LLVMValueRef.CreateConstInt(type, 0, false);
+        }
+        else if (type.Kind == LLVMTypeKind.LLVMArrayTypeKind)
+        {
+            // Array de ceros
+            uint arraySize = type.ArrayLength;
+            LLVMValueRef[] zeros = new LLVMValueRef[arraySize];
+            for (uint i = 0; i < arraySize; i++)
+            {
+                zeros[i] = GetZeroInitializer(type.ElementType);
+            }
+            return LLVMValueRef.CreateConstArray(type.ElementType, zeros);
+        }
+
+        return LLVMValueRef.CreateConstInt(int32Type, 0, false);
+    }
+
+    private LLVMValueRef ResolveVariable(string name)
+    {
+        foreach (var scope in scopes)
+        {
+            if (scope.ContainsKey(name))
+            {
+                return scope[name];
+            }
+        }
+        throw new Exception($"Variable not found: {name}");
+    }
+
+    // ===== EXPRESIONES =====
+
+    public override object VisitExpression(MiniGoCompilerParser.ExpressionContext context)
+    {
+        // Expresión primaria simple
+        if (context.primaryExpression() != null && context.ChildCount == 1)
+        {
+            return Visit(context.primaryExpression());
+        }
+
+        // Operadores binarios
+        if (context.ChildCount == 3)
+        {
+            var left = Visit(context.expression(0)) as LLVMValueRef?;
+            var right = Visit(context.expression(1)) as LLVMValueRef?;
+
+            if (!left.HasValue || !right.HasValue)
+            {
+                throw new Exception("Invalid operands in binary expression");
+            }
+
+            string op = context.GetChild(1).GetText();
+            return BuildBinaryOp(left.Value, right.Value, op);
+        }
+
+        // Operadores unarios: +expr, -expr, !expr, ^expr
+        if (context.ChildCount == 2)
+        {
+            var operand = Visit(context.expression(0)) as LLVMValueRef?;
+            if (!operand.HasValue)
+            {
+                throw new Exception("Invalid operand in unary expression");
+            }
+
+            string op = context.GetChild(0).GetText();
+            return BuildUnaryOp(operand.Value, op);
+        }
+
+        throw new Exception("Unsupported expression form");
+    }
+
+    public override object VisitPrimaryExpression(MiniGoCompilerParser.PrimaryExpressionContext context)
+    {
+        // Operando simple (literal o identificador)
+        if (context.operand() != null)
+        {
+            return Visit(context.operand());
+        }
+
+        // Indexación de array: arr[index]
+        if (context.index() != null)
+        {
+            var baseExpr = Visit(context.primaryExpression()) as LLVMValueRef?;
+            var indexExpr = Visit(context.index().expression()) as LLVMValueRef?;
+
+            if (!baseExpr.HasValue || !indexExpr.HasValue)
+            {
+                throw new Exception("Invalid array indexing");
+            }
+
+            // baseExpr es un puntero al array (alloca o global)
+            // Necesitamos hacer un GEP para acceder al elemento
+            LLVMValueRef[] indices = new LLVMValueRef[]
+            {
+                LLVMValueRef.CreateConstInt(int32Type, 0, false), // Índice del array (siempre 0 para primer nivel)
+                indexExpr.Value // Índice del elemento
+            };
+
+            return builder.BuildGEP2(
+                baseExpr.Value.TypeOf.ElementType,
+                baseExpr.Value,
+                indices,
+                "arrayidx"
+            );
+        }
+
+        throw new Exception("Unsupported primary expression");
+    }
+
+    public override object VisitOperand(MiniGoCompilerParser.OperandContext context)
+    {
+        // Literal
+        if (context.literal() != null)
+        {
+            return Visit(context.literal());
+        }
+
+        // Identificador (acceso a variable)
+        if (context.identifier() != null)
+        {
+            string varName = context.identifier().GetText();
+            LLVMValueRef varPtr = ResolveVariable(varName);
+
+            // Si es un array, devolver el puntero directamente (para indexación)
+            if (varPtr.TypeOf.ElementType.Kind == LLVMTypeKind.LLVMArrayTypeKind)
+            {
+                return varPtr;
+            }
+
+            // Para variables simples, cargar el valor
+            return builder.BuildLoad2(varPtr.TypeOf.ElementType, varPtr, varName);
+        }
+
+        // Expresión entre paréntesis
+        if (context.expression() != null)
+        {
+            return Visit(context.expression());
+        }
+
+        throw new Exception("Unsupported operand");
+    }
+
+    public override object VisitLiteral(MiniGoCompilerParser.LiteralContext context)
+    {
+        // Literal entero
+        if (context.INTLITERAL() != null)
+        {
+            string text = context.INTLITERAL().GetText();
+            long value = long.Parse(text);
+            return LLVMValueRef.CreateConstInt(int32Type, (ulong)value, true);
+        }
+
+        throw new Exception("Unsupported literal type");
+    }
+
+    // ===== ASIGNACIONES =====
+
+    public override object VisitSimpleStatement(MiniGoCompilerParser.SimpleStatementContext context)
+    {
+        if (context.assignmentStatement() != null)
+        {
+            Visit(context.assignmentStatement());
+        }
+        else if (context.expression() != null)
+        {
+            // Expresión simple (ej: llamada a función o incremento/decremento)
+            Visit(context.expression());
+        }
+        return null;
+    }
+
+    public override object VisitAssignmentStatement(MiniGoCompilerParser.AssignmentStatementContext context)
+    {
+        // Asignación simple: x = expr o arr[i] = expr
+        if (context.ASSIGN() != null)
+        {
+            var leftExprs = context.expressionList(0).expression();
+            var rightExprs = context.expressionList(1).expression();
+
+            if (leftExprs.Length != rightExprs.Length)
+            {
+                throw new Exception("Mismatch in assignment count");
+            }
+
+            for (int i = 0; i < leftExprs.Length; i++)
+            {
+                var lhs = leftExprs[i];
+                var rhs = rightExprs[i];
+
+                // Evaluar el lado derecho
+                var rhsValue = Visit(rhs) as LLVMValueRef?;
+                if (!rhsValue.HasValue)
+                {
+                    throw new Exception("Invalid right-hand side in assignment");
+                }
+
+                // Determinar el destino (variable o elemento de array)
+                LLVMValueRef destPtr;
+
+                // Si es un identificador simple
+                if (lhs.primaryExpression() != null && 
+                    lhs.primaryExpression().operand() != null &&
+                    lhs.primaryExpression().operand().identifier() != null)
+                {
+                    string varName = lhs.primaryExpression().operand().identifier().GetText();
+                    destPtr = ResolveVariable(varName);
+                }
+                // Si es indexación de array: arr[i]
+                else if (lhs.primaryExpression() != null && lhs.primaryExpression().index() != null)
+                {
+                    // VisitPrimaryExpression ya devuelve el puntero al elemento
+                    var elemPtr = Visit(lhs.primaryExpression()) as LLVMValueRef?;
+                    if (!elemPtr.HasValue)
+                    {
+                        throw new Exception("Invalid array indexing in assignment");
+                    }
+                    destPtr = elemPtr.Value;
+                }
+                else
+                {
+                    throw new Exception("Unsupported left-hand side in assignment");
+                }
+
+                // Realizar el store
+                builder.BuildStore(rhsValue.Value, destPtr);
+            }
+        }
+        // Asignaciones compuestas: x += expr, x -= expr, etc.
+        else if (context.ADDASSIGN() != null)
+        {
+            BuildCompoundAssignment(context.expression(0), context.expression(1), "add");
+        }
+        else if (context.SUBASSIGN() != null)
+        {
+            BuildCompoundAssignment(context.expression(0), context.expression(1), "sub");
+        }
+        else if (context.MULASSIGN() != null)
+        {
+            BuildCompoundAssignment(context.expression(0), context.expression(1), "mul");
+        }
+        else if (context.DIVASSIGN() != null)
+        {
+            BuildCompoundAssignment(context.expression(0), context.expression(1), "div");
+        }
+
+        return null;
+    }
+
+    private void BuildCompoundAssignment(MiniGoCompilerParser.ExpressionContext lhs, 
+                                          MiniGoCompilerParser.ExpressionContext rhs, 
+                                          string operation)
+    {
+        // Evaluar el lado derecho
+        var rhsValue = Visit(rhs) as LLVMValueRef?;
+        if (!rhsValue.HasValue)
+        {
+            throw new Exception("Invalid right-hand side in compound assignment");
+        }
+
+        // Obtener el puntero y cargar el valor actual
+        LLVMValueRef destPtr;
+        if (lhs.primaryExpression() != null &&
+            lhs.primaryExpression().operand() != null &&
+            lhs.primaryExpression().operand().identifier() != null)
+        {
+            string varName = lhs.primaryExpression().operand().identifier().GetText();
+            destPtr = ResolveVariable(varName);
+        }
+        else
+        {
+            throw new Exception("Unsupported left-hand side in compound assignment");
+        }
+
+        var currentValue = builder.BuildLoad2(destPtr.TypeOf.ElementType, destPtr, "tmp");
+
+        // Realizar la operación
+        LLVMValueRef result;
+        switch (operation)
+        {
+            case "add":
+                result = builder.BuildAdd(currentValue, rhsValue.Value, "addtmp");
+                break;
+            case "sub":
+                result = builder.BuildSub(currentValue, rhsValue.Value, "subtmp");
+                break;
+            case "mul":
+                result = builder.BuildMul(currentValue, rhsValue.Value, "multmp");
+                break;
+            case "div":
+                result = builder.BuildSDiv(currentValue, rhsValue.Value, "divtmp");
+                break;
+            default:
+                throw new Exception($"Unsupported compound operation: {operation}");
+        }
+
+        // Almacenar el resultado
+        builder.BuildStore(result, destPtr);
+    }
+
+    private LLVMValueRef BuildBinaryOp(LLVMValueRef left, LLVMValueRef right, string op)
+    {
+        switch (op)
+        {
+            case "+":
+                return builder.BuildAdd(left, right, "addtmp");
+            case "-":
+                return builder.BuildSub(left, right, "subtmp");
+            case "*":
+                return builder.BuildMul(left, right, "multmp");
+            case "/":
+                return builder.BuildSDiv(left, right, "divtmp");
+            case "%":
+                return builder.BuildSRem(left, right, "modtmp");
+            case "==":
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntEQ, left, right, "eqtmp");
+            case "!=":
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntNE, left, right, "neqtmp");
+            case "<":
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntSLT, left, right, "lttmp");
+            case "<=":
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntSLE, left, right, "letmp");
+            case ">":
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntSGT, left, right, "gttmp");
+            case ">=":
+                return builder.BuildICmp(LLVMIntPredicate.LLVMIntSGE, left, right, "getmp");
+            case "&":
+                return builder.BuildAnd(left, right, "andtmp");
+            case "|":
+                return builder.BuildOr(left, right, "ortmp");
+            case "^":
+                return builder.BuildXor(left, right, "xortmp");
+            default:
+                throw new Exception($"Unsupported binary operator: {op}");
+        }
+    }
+
+    private LLVMValueRef BuildUnaryOp(LLVMValueRef operand, string op)
+    {
+        switch (op)
+        {
+            case "+":
+                return operand; // Unario + no hace nada
+            case "-":
+                return builder.BuildNeg(operand, "negtmp");
+            case "!":
+                return builder.BuildNot(operand, "nottmp");
+            case "^":
+                return builder.BuildNot(operand, "bitnottmp");
+            default:
+                throw new Exception($"Unsupported unary operator: {op}");
+        }
+    }
+}

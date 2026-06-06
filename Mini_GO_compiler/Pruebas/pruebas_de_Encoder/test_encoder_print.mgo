@@ -1,0 +1,10 @@
+package simple;
+
+var x int = 42;
+
+func main() {
+	print(x);
+	println();
+	println(10);
+	println(20);
+};

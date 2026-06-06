@@ -1,0 +1,27 @@
+package test;
+
+var x int = 10;
+var arr [5]int;
+
+func suma(a int, b int) int {
+	return a + b;
+};
+
+func main() {
+	var result int;
+	result = suma(5, 3);
+	println(result);
+
+	print(x);
+	println();
+
+	arr[0] = 100;
+	arr[1] = 200;
+
+	var size int;
+	size = len(arr);
+	println(size);
+
+	println(arr[0]);
+	println(arr[1]);
+};

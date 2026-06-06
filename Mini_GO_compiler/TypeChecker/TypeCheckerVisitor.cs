@@ -676,6 +676,47 @@ namespace Mini_GO_compiler.TypeChecker
                     return MiniGoType.Error;
                 }
             }
+            else if (context.index() != null)
+            {
+                // Indexación de arrays: arr[index]
+                try
+                {
+                    MiniGoType baseType = (MiniGoType)Visit(context.primaryExpression());
+
+                    // Verificar que el índice sea un entero
+                    MiniGoType indexType = (MiniGoType)Visit(context.index().expression());
+                    if (indexType != MiniGoType.Int && indexType != MiniGoType.Error)
+                    {
+                        ReportError("Array index must be an integer!", context.index().LEFTCORCHET().Symbol);
+                    }
+
+                    // Si baseType es un array o slice, devolver el tipo del elemento
+                    var baseIdent = GetIdentFromPrimaryExpression(context.primaryExpression());
+                    if (baseIdent != null && baseIdent.TypeInfo != null)
+                    {
+                        if (baseIdent.TypeInfo.BaseType == MiniGoType.IntArray)
+                        {
+                            // Array de enteros: devolver Int
+                            return MiniGoType.Int;
+                        }
+                        else if (baseIdent.TypeInfo.BaseType == MiniGoType.Slice)
+                        {
+                            // Slice: devolver el tipo del elemento
+                            return baseIdent.TypeInfo.ElementType;
+                        }
+                    }
+
+                    if (baseType != MiniGoType.Error && baseType != MiniGoType.IntArray && baseType != MiniGoType.Slice)
+                    {
+                        ReportError("Cannot index non-array/slice type!", context.index().LEFTCORCHET().Symbol);
+                    }
+                    return MiniGoType.Error;
+                }
+                catch (TypeErrorException)
+                {
+                    return MiniGoType.Error;
+                }
+            }
 
             try
             {

@@ -63,8 +63,8 @@ public static class CompileProcess
                 }
                 else
                 {
-                    //EncoderVisitor encoderVisitor = new EncoderVisitor();
-                    //encoderVisitor.Visit(tree);
+                    EncoderVisitor encoderVisitor = new EncoderVisitor();
+                    encoderVisitor.Visit(tree);
                     LinkedList<string> list = new LinkedList<string>();
                     return list;
                 }

@@ -7,8 +7,48 @@
       "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:encoder\\encodervisitor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\pruebas_de_encoder\\test_encoder_complete.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\pruebas_de_encoder\\test_encoder_complete.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\mini_go_compiler.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
       "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:mini_go_compiler.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\typechecker\\typecheckervisitor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:typechecker\\typecheckervisitor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\mgo\\test_encoder_simple.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\mgo\\test_encoder_simple.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\mgo\\test_encoder_arrays.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\mgo\\test_encoder_arrays.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\mgo\\test_encoder_complete.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\mgo\\test_encoder_complete.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\pruebas_de_encoder\\test_encoder_functions.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\pruebas_de_encoder\\test_encoder_functions.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\pruebas_de_encoder\\test_encoder_print.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\pruebas_de_encoder\\test_encoder_print.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\pruebas_de_encoder\\test_encoder_simple_call.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\pruebas_de_encoder\\test_encoder_simple_call.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\pruebas_de_encoder\\test_encoder_jit.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\pruebas_de_encoder\\test_encoder_jit.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|c:\\users\\ryana\\documents\\proyectos_y_varas_locas\\proyecto_compilador_mini_go\\mini_go_compiler\\pruebas\\pruebas_de_encoder\\test_print_vs_println.mgo||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{E93682DC-96B5-85B2-EE73-8B4566060B65}|Mini_GO_compiler.csproj|solutionrelative:pruebas\\pruebas_de_encoder\\test_print_vs_println.mgo||{8B382828-6202-11D1-8870-0000F87579D2}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,19 +58,23 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 2,
           "Children": [
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Mini_GO_compiler",
-              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
-              "RelativeDocumentMoniker": "Mini_GO_compiler.csproj",
-              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
-              "RelativeToolTip": "Mini_GO_compiler.csproj",
-              "ViewState": "AgIAAA8AAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-06-06T05:52:43.577Z",
+              "DocumentIndex": 10,
+              "Title": "test_encoder_jit.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_jit.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\pruebas_de_Encoder\\test_encoder_jit.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_jit.mgo",
+              "RelativeToolTip": "Pruebas\\pruebas_de_Encoder\\test_encoder_jit.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T22:27:01.827Z",
               "EditorCaption": ""
             },
             {
@@ -41,14 +85,131 @@
               "RelativeDocumentMoniker": "Encoder\\EncoderVisitor.cs",
               "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Encoder\\EncoderVisitor.cs",
               "RelativeToolTip": "Encoder\\EncoderVisitor.cs",
-              "ViewState": "AgIAAMcAAAAAAAAAAAAAANQAAAAFAAAAAAAAAA==",
+              "ViewState": "AgIAAHIEAAAAAAAAAAAAAHIEAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-06-06T05:18:07.884Z",
               "EditorCaption": ""
             },
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "test_print_vs_println.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_print_vs_println.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\pruebas_de_Encoder\\test_print_vs_println.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_print_vs_println.mgo",
+              "RelativeToolTip": "Pruebas\\pruebas_de_Encoder\\test_print_vs_println.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T22:51:34.143Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "test_encoder_print.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_print.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\pruebas_de_Encoder\\test_encoder_print.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_print.mgo",
+              "RelativeToolTip": "Pruebas\\pruebas_de_Encoder\\test_encoder_print.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T20:06:00.956Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "test_encoder_simple_call.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_simple_call.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\pruebas_de_Encoder\\test_encoder_simple_call.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_simple_call.mgo",
+              "RelativeToolTip": "Pruebas\\pruebas_de_Encoder\\test_encoder_simple_call.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T20:09:08.371Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "test_encoder_functions.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_functions.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\pruebas_de_Encoder\\test_encoder_functions.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_functions.mgo",
+              "RelativeToolTip": "Pruebas\\pruebas_de_Encoder\\test_encoder_functions.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T20:05:55.132Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "test_encoder_complete.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\mgo\\test_encoder_complete.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\mgo\\test_encoder_complete.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\mgo\\test_encoder_complete.mgo",
+              "RelativeToolTip": "Pruebas\\mgo\\test_encoder_complete.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T19:59:09.714Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "test_encoder_arrays.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\mgo\\test_encoder_arrays.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\mgo\\test_encoder_arrays.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\mgo\\test_encoder_arrays.mgo",
+              "RelativeToolTip": "Pruebas\\mgo\\test_encoder_arrays.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T19:59:09.531Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "test_encoder_simple.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\mgo\\test_encoder_simple.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\mgo\\test_encoder_simple.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\mgo\\test_encoder_simple.mgo",
+              "RelativeToolTip": "Pruebas\\mgo\\test_encoder_simple.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T19:59:09.332Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "TypeCheckerVisitor.cs",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\TypeChecker\\TypeCheckerVisitor.cs",
+              "RelativeDocumentMoniker": "TypeChecker\\TypeCheckerVisitor.cs",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\TypeChecker\\TypeCheckerVisitor.cs",
+              "RelativeToolTip": "TypeChecker\\TypeCheckerVisitor.cs",
+              "ViewState": "AgIAALMCAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-06-06T19:37:57.243Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "test_encoder_complete.mgo",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_complete.mgo",
+              "RelativeDocumentMoniker": "Pruebas\\pruebas_de_Encoder\\test_encoder_complete.mgo",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Pruebas\\pruebas_de_Encoder\\test_encoder_complete.mgo",
+              "RelativeToolTip": "Pruebas\\pruebas_de_Encoder\\test_encoder_complete.mgo",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-06-06T19:36:49.946Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Mini_GO_compiler.csproj",
+              "DocumentMoniker": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+              "RelativeDocumentMoniker": "Mini_GO_compiler.csproj",
+              "ToolTip": "C:\\Users\\ryana\\Documents\\Proyectos_y_varas_locas\\Proyecto_Compilador_mini_GO\\Mini_GO_compiler\\Mini_GO_compiler.csproj",
+              "RelativeToolTip": "Mini_GO_compiler.csproj",
+              "ViewState": "AgIAAA8AAAAAAAAAAABBwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-06-06T05:52:43.577Z"
             }
           ]
         }

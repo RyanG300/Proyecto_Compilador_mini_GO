@@ -13,7 +13,6 @@
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
-    <PackageReference Include="libLLVM" Version="20.1.1" />
     <PackageReference Include="LLVMSharp" Version="20.1.2" />
   </ItemGroup>
 

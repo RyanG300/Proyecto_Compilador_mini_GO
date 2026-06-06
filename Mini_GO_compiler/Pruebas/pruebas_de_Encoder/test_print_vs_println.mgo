@@ -1,0 +1,10 @@
+package test;
+
+func main() {
+	print(1);
+	print(2);
+	print(3);
+	println();
+	println(4);
+	println(5);
+};

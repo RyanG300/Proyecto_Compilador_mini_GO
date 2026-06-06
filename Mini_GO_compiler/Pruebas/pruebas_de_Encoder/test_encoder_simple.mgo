@@ -1,0 +1,4 @@
+package simple;
+var x int = 1;
+var y int = 2;
+var z int;

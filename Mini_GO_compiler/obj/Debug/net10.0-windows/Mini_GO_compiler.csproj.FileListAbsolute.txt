@@ -56,3 +56,4 @@ C:\Users\ryana\Documents\Proyectos_y_varas_locas\Proyecto_Compilador_mini_GO\Min
 C:\Users\ryana\Documents\Proyectos_y_varas_locas\Proyecto_Compilador_mini_GO\Mini_GO_compiler\obj\Debug\net10.0-windows\ref\Mini_GO_compiler.dll
 C:\Users\ryana\Documents\Proyectos_y_varas_locas\Proyecto_Compilador_mini_GO\Mini_GO_compiler\bin\Debug\net10.0-windows\LLVMSharp.dll
 C:\Users\ryana\Documents\Proyectos_y_varas_locas\Proyecto_Compilador_mini_GO\Mini_GO_compiler\bin\Debug\net10.0-windows\LLVMSharp.Interop.dll
+C:\Users\ryana\Documents\Proyectos_y_varas_locas\Proyecto_Compilador_mini_GO\Mini_GO_compiler\bin\Debug\net10.0-windows\runtimes\win-x64\native\libLLVM.dll

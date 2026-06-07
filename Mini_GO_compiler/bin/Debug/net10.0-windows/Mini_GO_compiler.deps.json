@@ -10,7 +10,8 @@
         "dependencies": {
           "Antlr4.Runtime.Standard": "4.13.1",
           "AvalonEdit": "6.3.1.120",
-          "LLVMSharp": "20.1.2"
+          "LLVMSharp": "20.1.2",
+          "libLLVM.runtime.win-x64": "21.1.8"
         },
         "runtime": {
           "Mini_GO_compiler.dll": {}
@@ -29,6 +30,15 @@
           "lib/net8.0-windows7.0/ICSharpCode.AvalonEdit.dll": {
             "assemblyVersion": "6.3.1.120",
             "fileVersion": "6.3.1.120"
+          }
+        }
+      },
+      "libLLVM.runtime.win-x64/21.1.8": {
+        "runtimeTargets": {
+          "runtimes/win-x64/native/libLLVM.dll": {
+            "rid": "win-x64",
+            "assetType": "native",
+            "fileVersion": "21.1.8.0"
           }
         }
       },
@@ -72,6 +82,13 @@
       "sha512": "sha512-6ASBKPzAg64BLDlFOJo4Ypr1sA/6hB5+TfHLJaZYUSTE0jgxvKlVqKeo/ISTG9qEMxu604qUu6BGugmJkfdrNw==",
       "path": "avalonedit/6.3.1.120",
       "hashPath": "avalonedit.6.3.1.120.nupkg.sha512"
+    },
+    "libLLVM.runtime.win-x64/21.1.8": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-0ty/ruH6qzB+6p4lteuGLfTROBtTY7DZZQb+32VbiY2E13YLjLnxaSvt8f44oDU78BJuZYIWRUMNZo8gKweoyA==",
+      "path": "libllvm.runtime.win-x64/21.1.8",
+      "hashPath": "libllvm.runtime.win-x64.21.1.8.nupkg.sha512"
     },
     "LLVMSharp/20.1.2": {
       "type": "package",

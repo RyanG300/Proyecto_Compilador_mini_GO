@@ -421,6 +421,16 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
             scopes.Pop();
             typeScopes.Pop();
         }
+        // If Statement
+        else if (context.ifStatement() != null)
+        {
+            Visit(context.ifStatement());
+        }
+        // Loop
+        else if (context.loop() != null)
+        {
+            Visit(context.loop());
+        }
 
         return null;
     }
@@ -798,6 +808,14 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
             long value = long.Parse(text);
             return LLVMValueRef.CreateConstInt(int32Type, (ulong)value, true);
         }
+        
+        // Literal Raw String
+        if (context.RAWSTRINGLITERAL() != null)
+        {
+            string rawStr = context.RAWSTRINGLITERAL().GetText();
+            rawStr = rawStr.Substring(1, rawStr.Length - 2); // Quitar backticks
+            return builder.BuildGlobalStringPtr(rawStr, "rawstr");
+        }
 
         throw new Exception("Unsupported literal type");
     }
@@ -1067,6 +1085,11 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
         {
             // Crear el formato string basado en el tipo
             string formatStr = "%d";
+            if (arg.TypeOf.Kind == LLVMTypeKind.LLVMPointerTypeKind)
+            {
+                formatStr = "%s";
+            }
+            
             LLVMValueRef formatStrValue = builder.BuildGlobalStringPtr(formatStr, "fmt");
 
             // Llamar a printf
@@ -1134,5 +1157,119 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
         }
 
         throw new Exception("Invalid argument to len()");
+    }
+
+    // ===== CONTROL DE FLUJO =====
+
+    public override object VisitIfStatement(MiniGoCompilerParser.IfStatementContext context)
+    {
+        scopes.Push(new Dictionary<string, LLVMValueRef>());
+        typeScopes.Push(new Dictionary<string, LLVMTypeRef>());
+        
+        if (context.simpleStatement() != null)
+        {
+            Visit(context.simpleStatement());
+        }
+
+        var condValue = Visit(context.expression()) as LLVMValueRef?;
+        if (!condValue.HasValue) throw new Exception("Invalid condition in if statement");
+
+        LLVMBasicBlockRef thenBlock = currentFunction.AppendBasicBlock("then");
+        LLVMBasicBlockRef mergeBlock = currentFunction.AppendBasicBlock("ifcont");
+        LLVMBasicBlockRef elseBlock = mergeBlock; 
+
+        bool hasElse = context.ELSE() != null;
+        if (hasElse)
+        {
+            elseBlock = currentFunction.AppendBasicBlock("else");
+        }
+
+        builder.BuildCondBr(condValue.Value, thenBlock, elseBlock);
+
+        // then
+        builder.PositionAtEnd(thenBlock);
+        Visit(context.block(0));
+        
+        if (thenBlock.Terminator.Handle == IntPtr.Zero)
+        {
+            builder.BuildBr(mergeBlock);
+        }
+
+        // else
+        if (hasElse)
+        {
+            builder.PositionAtEnd(elseBlock);
+            
+            if (context.ifStatement() != null) Visit(context.ifStatement());
+            else if (context.block().Length > 1) Visit(context.block(1));
+            
+            if (builder.InsertBlock.Terminator.Handle == IntPtr.Zero)
+            {
+                builder.BuildBr(mergeBlock);
+            }
+            mergeBlock.MoveAfter(builder.InsertBlock);
+        }
+
+        builder.PositionAtEnd(mergeBlock);
+        
+        scopes.Pop();
+        typeScopes.Pop();
+        return null;
+    }
+
+    public override object VisitLoop(MiniGoCompilerParser.LoopContext context)
+    {
+        scopes.Push(new Dictionary<string, LLVMValueRef>());
+        typeScopes.Push(new Dictionary<string, LLVMTypeRef>());
+
+        if (context.simpleStatement().Length > 0 && context.SEMI().Length > 0)
+        {
+            Visit(context.simpleStatement(0));
+        }
+
+        LLVMBasicBlockRef condBlock = currentFunction.AppendBasicBlock("loopcond");
+        LLVMBasicBlockRef bodyBlock = currentFunction.AppendBasicBlock("loopbody");
+        LLVMBasicBlockRef postBlock = currentFunction.AppendBasicBlock("looppost");
+        LLVMBasicBlockRef endBlock = currentFunction.AppendBasicBlock("loopend");
+
+        builder.BuildBr(condBlock);
+        builder.PositionAtEnd(condBlock);
+
+        if (context.expression() != null)
+        {
+            var condValue = Visit(context.expression()) as LLVMValueRef?;
+            if (!condValue.HasValue) throw new Exception("Invalid condition in for loop");
+            builder.BuildCondBr(condValue.Value, bodyBlock, endBlock);
+        }
+        else
+        {
+            builder.BuildBr(bodyBlock);
+        }
+
+        builder.PositionAtEnd(bodyBlock);
+        Visit(context.block());
+        
+        if (builder.InsertBlock.Terminator.Handle == IntPtr.Zero)
+        {
+            builder.BuildBr(postBlock);
+        }
+
+        builder.PositionAtEnd(postBlock);
+        if (context.simpleStatement().Length > 1)
+        {
+            Visit(context.simpleStatement(1));
+        }
+        else if (context.simpleStatement().Length == 1 && context.SEMI().Length > 0 && context.GetChild(context.ChildCount - 2).GetText() != ";")
+        {
+             // Caso FOR simpleStatement ; ; simpleStatement { }
+             Visit(context.simpleStatement(0));
+        }
+        builder.BuildBr(condBlock); 
+
+        builder.PositionAtEnd(endBlock);
+        
+        scopes.Pop();
+        typeScopes.Pop();
+        return null;
     }
 }

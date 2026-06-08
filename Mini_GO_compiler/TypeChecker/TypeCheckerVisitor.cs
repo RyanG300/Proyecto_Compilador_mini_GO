@@ -434,7 +434,7 @@ namespace Mini_GO_compiler.TypeChecker
             {
                 return Visit(context.literal());
             }
-            else if (context.identifier().IDENTIFIER() != null)
+            else if (context.identifier() != null && context.identifier().IDENTIFIER() != null)
             {
                 var idToken = context.identifier().IDENTIFIER().Symbol;
                 var idText = idToken.Text;

@@ -11,6 +11,7 @@
           "Antlr4.Runtime.Standard": "4.13.1",
           "AvalonEdit": "6.3.1.120",
           "LLVMSharp": "20.1.2",
+          "LLVMSharp.Interop": "20.1.2",
           "libLLVM.runtime.win-x64": "21.1.8"
         },
         "runtime": {

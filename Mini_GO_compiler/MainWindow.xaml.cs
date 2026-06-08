@@ -32,6 +32,7 @@ namespace Mini_GO_compiler
         private string currentFile;
         private bool autoSave=false;
         private TextMarkerService markerService;
+        private bool run=false;
         
         public MainWindow()
         {
@@ -468,7 +469,7 @@ namespace Mini_GO_compiler
                 if (typeFile.Equals(".mgo"))
                 {
                     string context = editor.Text;
-                    LinkedList<string> errorList = CompileProcess.PreCompile(context);
+                    LinkedList<string> errorList = CompileProcess.PreCompile(context, run);
                     CompilePanel.Children.Clear();
                     var bc = new BrushConverter();
                         
@@ -529,6 +530,10 @@ namespace Mini_GO_compiler
                         text.Margin = new Thickness(8);
                         text.Text = "Process finished with exit code 0.";
                         CompilePanel.Children.Add(text);
+                        if (run)
+                        {
+                            text.Text = "Output at the terminal (Not at this terminal due to some complication)";
+                        }
                     }    
                 }
                 else
@@ -566,6 +571,13 @@ namespace Mini_GO_compiler
             {
                 MessageBox.Show("No file has been selected");   
             }
+        }
+
+        private void Compile_And_Run_Click(object sender, RoutedEventArgs e)
+        {
+            run = true;
+            Compile_Click(sender, e);
+            run = false;
         }
         
         private void Save_Click(object sender, RoutedEventArgs e)

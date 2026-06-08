@@ -1,4 +1,7 @@
 package main;
+/*No compilar y correr, podria contener limitaciones que provocaran un error en el encoder, compilar 
+y correr en Pruebas/mgo/pruebas_de_Encoder en su lugar
+*/
 
 var global_var int = 10;
 

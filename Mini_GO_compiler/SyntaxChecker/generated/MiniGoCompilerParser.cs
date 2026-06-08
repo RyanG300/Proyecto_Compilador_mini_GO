@@ -456,7 +456,6 @@ public partial class MiniGoCompilerParser : Parser {
 	}
 
 	public partial class SingleVarDeclContext : ParserRuleContext {
-		public LLVMSharp.Interop.LLVMValueRef[] valorLLVM = null;
 		[System.Diagnostics.DebuggerNonUserCode] public IdentifierListContext identifierList() {
 			return GetRuleContext<IdentifierListContext>(0);
 		}
@@ -3823,7 +3822,6 @@ public partial class MiniGoCompilerParser : Parser {
 	}
 
 	public partial class IdentifierContext : ParserRuleContext {
-		public ParserRuleContext decl = null;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode IDENTIFIER() { return GetToken(MiniGoCompilerParser.IDENTIFIER, 0); }
 		public IdentifierContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)

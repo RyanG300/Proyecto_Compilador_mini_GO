@@ -1,5 +1,8 @@
 // Prueba Indicador 6: Inferencia de tipos para primitivos
 // La inferencia debe funcionar solo con tipos primitivos
+/*No compilar y correr, podria contener limitaciones que provocaran un error en el encoder, compilar 
+y correr en Pruebas/mgo/pruebas_de_Encoder en su lugar
+*/
 
 package main;
 

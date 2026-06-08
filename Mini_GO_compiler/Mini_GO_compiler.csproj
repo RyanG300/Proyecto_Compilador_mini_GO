@@ -29,7 +29,6 @@
 
   <ItemGroup>
     <None Remove="ide\syntaxHighlighter.xml" />
-    <EmbeddedResource Include="ide\syntaxHighlighter.xml" />
     <EmbeddedResource Include="MiniGoSyntax.xshd" />
   </ItemGroup>
 

@@ -1,10 +1,10 @@
 package test;
 
 func main() {
-	print(1);
+	print(`RawString`);
 	print(2);
 	print(3);
 	println();
-	println(4);
+	println(`Hola mundo`);
 	println(5);
 };

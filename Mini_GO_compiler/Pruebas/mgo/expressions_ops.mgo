@@ -1,4 +1,7 @@
 package exprs;
+/*No compilar y correr, podria contener limitaciones que provocaran un error en el encoder, compilar 
+y correr en Pruebas/mgo/pruebas_de_Encoder en su lugar
+*/
 var base = 4 + 2 * 3;
 func calc(x int) int {
 x = (x << 1) & 7;

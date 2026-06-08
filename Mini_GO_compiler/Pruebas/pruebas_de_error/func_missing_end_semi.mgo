@@ -1,3 +1,7 @@
+/*No compilar y correr, podria contener limitaciones que provocaran un error en el encoder, compilar 
+y correr en Pruebas/mgo/pruebas_de_Encoder en su lugar
+*/
+
 package falla;
 func main() {
 println("hola");

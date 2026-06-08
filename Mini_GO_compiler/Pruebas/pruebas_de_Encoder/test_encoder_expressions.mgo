@@ -1,0 +1,109 @@
+package test;
+
+// Prueba completa de expresiones matemáticas y lógicas
+
+func main() {
+	// ===== OPERADORES MATEMÁTICOS =====
+	var a int = 10;
+	var b int = 3;
+	var result int;
+
+	// Suma
+	result = a + b;
+	print(result);  // Debe imprimir: 13
+	println();
+
+	// Resta
+	result = a - b;
+	print(result);  // Debe imprimir: 7
+	println();
+
+	// Multiplicación
+	result = a * b;
+	print(result);  // Debe imprimir: 30
+	println();
+
+	// División
+	result = a / b;
+	print(result);  // Debe imprimir: 3
+	println();
+
+	// Módulo
+	result = a % b;
+	print(result);  // Debe imprimir: 1
+	println();
+
+	// ===== EXPRESIONES COMPLEJAS CON PARÉNTESIS =====
+	result = (a + b) * 2;
+	print(result);  // Debe imprimir: 26  [(10+3)*2 = 13*2 = 26]
+	println();
+
+	result = a + (b * 2);
+	print(result);  // Debe imprimir: 16  [10+(3*2) = 10+6 = 16]
+	println();
+
+	result = ((a - b) + 5) * 2;
+	print(result);  // Debe imprimir: 24  [((10-3)+5)*2 = (7+5)*2 = 12*2 = 24]
+	println();
+
+	
+	// Igual
+	
+	if(a == b){
+		print(`Cumple a == b`);  // No deberia imprimir
+		println();
+	};
+	
+
+	// Diferente
+	if(a != b){
+		print(`Cumple a != b`);  // Deberia imprimir
+		println();
+	};
+
+	// Menor que
+	if (a < b){
+		print(`Cumple a < b`);  // No deberia imprimir
+		println();
+	};
+	
+
+	// Menor o igual que
+	if(b <= a){
+		print(`Cumple b <= a`);  //deberia imprimir
+		println();
+	};
+	
+
+	// Mayor que
+	if(a > b){
+		print(`Cumple a > b`);  // Deberia imprimr
+		println();
+	};
+	
+
+	// Mayor o igual que
+	if(a >= b){
+		print(`Cumple a >= b`);  // Deberia imprimir
+		println();
+	};
+	
+
+	// ===== EXPRESIONES COMPLEJAS CON COMPARACIONES =====
+	if( (a + b) > 10){
+		print(`Cumple (a + b) > 10`);  // Debe imprimir
+		println();
+	};
+	
+
+	if((a - b) == 7){
+		print(`Cumple (a - b) == 7`);  // Debe imprimir
+		println();
+	};
+	
+
+	if(((a * 2) / b) >= 6){
+		print(`Cumple ((a * 2) / b) >= 6`);  // Debe imprimir
+		println();
+	};
+};

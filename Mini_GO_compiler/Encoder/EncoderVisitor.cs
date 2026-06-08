@@ -42,6 +42,9 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
     private static IntPtr printfPtr;
     private static IntPtr fflushPtr;
 
+    // Flag para indicar si necesitamos un lvalue (puntero) o rvalue (valor)
+    private bool needsLValue = false;
+
     public EncoderVisitor()
     {
         //this.int32Type = LLVMTypeRef.Int32;
@@ -120,8 +123,8 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
 
         // Generar IR
         GeneratedIR = module.PrintToString();
-        Console.WriteLine("=== LLVM IR Generated ===");
-        Console.WriteLine(GeneratedIR);
+        //Console.WriteLine("=== LLVM IR Generated ===");
+        //Console.WriteLine(GeneratedIR);
 
         // Guardar a archivo
         try
@@ -725,12 +728,21 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
                 indexExpr.Value // Índice del elemento
             };
 
-            return builder.BuildGEP2(
+            LLVMValueRef elemPtr = builder.BuildGEP2(
                 baseType,
                 baseExpr.Value,
                 indices,
                 "arrayidx"
             );
+
+            // Si no necesitamos un lvalue (puntero), cargar el valor
+            if (!needsLValue)
+            {
+                // Los arrays son siempre de int32 por ahora
+                return builder.BuildLoad2(int32Type, elemPtr, "arrayval");
+            }
+
+            return elemPtr;
         }
 
         // Llamada a función: func(args)
@@ -828,10 +840,100 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
         {
             Visit(context.assignmentStatement());
         }
+        // Manejo de declaración corta (:=) - por ejemplo: i := 0
+        else if (context.COLONASSIGN() != null)
+        {
+            var leftExprs = context.expressionList(0).expression();
+            var rightExprs = context.expressionList(1).expression();
+
+            if (leftExprs.Length != rightExprs.Length)
+            {
+                throw new Exception("Mismatch in short declaration count");
+            }
+
+            for (int i = 0; i < leftExprs.Length; i++)
+            {
+                var lhs = leftExprs[i];
+                var rhs = rightExprs[i];
+
+                // El lado izquierdo debe ser un identificador simple
+                if (lhs.primaryExpression() != null &&
+                    lhs.primaryExpression().operand() != null &&
+                    lhs.primaryExpression().operand().identifier() != null)
+                {
+                    string varName = lhs.primaryExpression().operand().identifier().GetText();
+
+                    // Evaluar el lado derecho para obtener el valor
+                    var rhsValue = Visit(rhs) as LLVMValueRef?;
+                    if (!rhsValue.HasValue)
+                    {
+                        throw new Exception("Invalid right-hand side in short declaration");
+                    }
+
+                    // Inferir el tipo del valor del lado derecho
+                    LLVMTypeRef varType = rhsValue.Value.TypeOf;
+
+                    // Crear una alloca para la variable local
+                    LLVMValueRef varRef = builder.BuildAlloca(varType, varName);
+
+                    // Almacenar el valor inicial
+                    builder.BuildStore(rhsValue.Value, varRef);
+
+                    // Agregar a las tablas de símbolos
+                    scopes.Peek()[varName] = varRef;
+                    typeScopes.Peek()[varName] = varType;
+                }
+                else
+                {
+                    throw new Exception("Short declaration (:=) requires an identifier on the left-hand side");
+                }
+            }
+        }
         else if (context.expression() != null)
         {
             // Expresión simple (ej: llamada a función o incremento/decremento)
-            Visit(context.expression());
+            var expr = Visit(context.expression()) as LLVMValueRef?;
+
+            // Manejar incremento/decremento postfijo: x++ o x--
+            if (context.ADDONE() != null || context.SUBONE() != null)
+            {
+                if (expr.HasValue)
+                {
+                    // La expresión debe ser un identificador que resuelva a una variable
+                    // Necesitamos obtener el puntero a la variable para poder incrementar/decrementar
+                    if (context.expression().primaryExpression() != null &&
+                        context.expression().primaryExpression().operand() != null &&
+                        context.expression().primaryExpression().operand().identifier() != null)
+                    {
+                        string varName = context.expression().primaryExpression().operand().identifier().GetText();
+                        LLVMValueRef varPtr = ResolveVariable(varName);
+                        LLVMTypeRef varType = ResolveVariableType(varName);
+
+                        // Cargar el valor actual
+                        LLVMValueRef currentValue = builder.BuildLoad2(varType, varPtr, "loadtmp");
+
+                        // Incrementar o decrementar
+                        LLVMValueRef newValue;
+                        if (context.ADDONE() != null)
+                        {
+                            LLVMValueRef one = LLVMValueRef.CreateConstInt(int32Type, 1, false);
+                            newValue = builder.BuildAdd(currentValue, one, "inctmp");
+                        }
+                        else // SUBONE
+                        {
+                            LLVMValueRef one = LLVMValueRef.CreateConstInt(int32Type, 1, false);
+                            newValue = builder.BuildSub(currentValue, one, "dectmp");
+                        }
+
+                        // Almacenar el nuevo valor
+                        builder.BuildStore(newValue, varPtr);
+                    }
+                    else
+                    {
+                        throw new Exception("Increment/decrement can only be applied to identifiers");
+                    }
+                }
+            }
         }
         return null;
     }
@@ -875,13 +977,22 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
                 // Si es indexación de array: arr[i]
                 else if (lhs.primaryExpression() != null && lhs.primaryExpression().index() != null)
                 {
-                    // VisitPrimaryExpression ya devuelve el puntero al elemento
-                    var elemPtr = Visit(lhs.primaryExpression()) as LLVMValueRef?;
-                    if (!elemPtr.HasValue)
+                    // Necesitamos el puntero (lvalue) para la asignación
+                    try
                     {
-                        throw new Exception("Invalid array indexing in assignment");
+                        needsLValue = true;
+                        var elemPtr = Visit(lhs.primaryExpression()) as LLVMValueRef?;
+
+                        if (!elemPtr.HasValue)
+                        {
+                            throw new Exception("Invalid array indexing in assignment");
+                        }
+                        destPtr = elemPtr.Value;
                     }
-                    destPtr = elemPtr.Value;
+                    finally
+                    {
+                        needsLValue = false;
+                    }
                 }
                 else
                 {
@@ -1089,7 +1200,7 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
             {
                 formatStr = "%s";
             }
-            
+
             LLVMValueRef formatStrValue = builder.BuildGlobalStringPtr(formatStr, "fmt");
 
             // Llamar a printf
@@ -1113,20 +1224,17 @@ public class EncoderVisitor : MiniGoCompilerBaseVisitor<object>
             );
         }
 
-        // Forzar flush del buffer después de println
-        if (newline)
-        {
-            // fflush(NULL) - flush todos los buffers de salida
-            LLVMValueRef nullPtr = LLVMValueRef.CreateConstPointerNull(
-                LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)
-            );
-            builder.BuildCall2(
-                fflushType,
-                fflushFunc,
-                new[] { nullPtr },
-                ""
-            );
-        }
+        // Forzar flush del buffer siempre (tanto para print como println)
+        // fflush(NULL) - flush todos los buffers de salida
+        LLVMValueRef nullPtr = LLVMValueRef.CreateConstPointerNull(
+            LLVMTypeRef.CreatePointer(LLVMTypeRef.Int8, 0)
+        );
+        builder.BuildCall2(
+            fflushType,
+            fflushFunc,
+            new[] { nullPtr },
+            ""
+        );
 
         // print/println no retornan valor (void), pero necesitamos devolver algo
         // Devolvemos un valor dummy

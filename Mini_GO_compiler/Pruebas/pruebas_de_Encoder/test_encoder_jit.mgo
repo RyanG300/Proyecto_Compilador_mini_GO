@@ -1,7 +1,0 @@
-package test;
-
-func main() {
-	var x int;
-	x = 42;
-	println(x);
-};

@@ -202,7 +202,7 @@
                         ToolTip="Guardar archivo actual"/>
                 <Button Style="{StaticResource buttonStyle}" Content="▶ Compile" Click="Compile_Click"
                         ToolTip="Compilar código"/>
-                <Button Style="{StaticResource buttonStyle}" Width="150" Content="⏩ Compile and run"
+                <Button Style="{StaticResource buttonStyle}" Width="150" Content="⏩ Compile and run" Click="Compile_And_Run_Click"
                         ToolTip="Compilar y ejecutar"/>
 
                 <!-- Contenedor del archivo actual con estilo mejorado -->

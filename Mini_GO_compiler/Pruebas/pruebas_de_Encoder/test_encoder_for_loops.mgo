@@ -1,0 +1,16 @@
+package main; 
+var x int = 5; //Variable declarada con valor
+var y int; //Variable declarada sin valor
+
+func prueba(num1 int) int{
+    var num2 int = 5;
+    return num1 + num2;
+};
+
+func main(){
+	var i int;
+	for i:=0; i < 5; i++ {
+    	y += prueba(x);
+    	println(y);
+  	};
+};

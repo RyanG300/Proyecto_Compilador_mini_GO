@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Mini_GO_compiler")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+59872df61ee7f036e4d71d362b83031d8fcaffa8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+25ec86547d6fb828d7aa0a5448084865663bb6c8")]
 [assembly: System.Reflection.AssemblyProductAttribute("Mini_GO_compiler")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Mini_GO_compiler")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

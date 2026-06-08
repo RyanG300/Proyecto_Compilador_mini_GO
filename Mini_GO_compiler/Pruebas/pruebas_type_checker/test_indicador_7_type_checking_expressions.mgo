@@ -1,5 +1,8 @@
 // Prueba Indicador 7: Chequeo de tipos en expresiones
 // Debe validar tipos en operaciones binarias y unarias
+/*No compilar y correr, podria contener limitaciones que provocaran un error en el encoder, compilar 
+y correr en Pruebas/mgo/pruebas_de_Encoder en su lugar
+*/
 
 package main;
 

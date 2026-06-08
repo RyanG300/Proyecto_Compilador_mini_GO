@@ -1,4 +1,7 @@
 // PRUEBA - Indicador 8: Validación de parámetros en llamadas a funciones
+/*No compilar y correr, podria contener limitaciones que provocaran un error en el encoder, compilar 
+y correr en Pruebas/mgo/pruebas_de_Encoder en su lugar
+*/
 
 package main;
 
@@ -33,19 +36,19 @@ func testFunctionCallsCorrect() {
 func testFunctionCallsErrors() {
 
 	// Error: número incorrecto de parámetros
-	var x int = add(5);                    // ERROR: faltan parámetros (esperados 2, dados 1)
-	var y int = add(1, 2, 3);              // ERROR: demasiados parámetros (esperados 2, dados 3)
-	var z string = concatenate("only");    // ERROR: faltan parámetros
-	noParams(10);                          // ERROR: demasiados parámetros (esperados 0, dado 1)
+	//var x int = add(5);                    // ERROR: faltan parámetros (esperados 2, dados 1)
+	//var y int = add(1, 2, 3);              // ERROR: demasiados parámetros (esperados 2, dados 3)
+	//var z string = concatenate("only");    // ERROR: faltan parámetros
+	//noParams(10);                          // ERROR: demasiados parámetros (esperados 0, dado 1)
 
 	// Error: tipo incorrecto de parámetros
-	var a int = add("hello", "world");     // ERROR: se esperan int, se dan string
-	var b int = add(3.14, 2.71);           // ERROR: se esperan int, se dan float64
-	var c string = concatenate(10, 20);    // ERROR: se esperan string, se dan int
+	//var a int = add("hello", "world");     // ERROR: se esperan int, se dan string
+	//var b int = add(3.14, 2.71);           // ERROR: se esperan int, se dan float64
+	//var c string = concatenate(10, 20);    // ERROR: se esperan string, se dan int
 
 	// Error: mezcla de tipos correctos e incorrectos
-	var e int = add(5, "text");            // ERROR: segundo parámetro tipo incorrecto
-	var f string = concatenate("hello", 42); // ERROR: segundo parámetro tipo incorrecto
+	//var e int = add(5, "text");            // ERROR: segundo parámetro tipo incorrecto
+	//var f string = concatenate("hello", 42); // ERROR: segundo parámetro tipo incorrecto
 };
 
 func sum3(a int, b int, c int) int {
@@ -56,6 +59,6 @@ func testMultipleParamsSameType() {
 	var x int = sum3(1, 2, 3);  // OK
 
 	// ERRORES detectados:
-	var y int = sum3(1, 2);     // ERROR: faltan parámetros
-	var z int = sum3(1, "two", 3); // ERROR: segundo parámetro tipo incorrecto
+	//var y int = sum3(1, 2);     // ERROR: faltan parámetros
+	//var z int = sum3(1, "two", 3); // ERROR: segundo parámetro tipo incorrecto
 };

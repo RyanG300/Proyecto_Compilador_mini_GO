@@ -11,7 +11,7 @@ namespace Mini_GO_compiler;
 
 public static class CompileProcess
 {
-    public static LinkedList<string> PreCompile(string file)
+    public static LinkedList<string> PreCompile(string file, bool run)
     {
             var inputStream = new AntlrInputStream(file);
             var lexer = new MiniGoCompilerLexer(inputStream);
@@ -63,9 +63,12 @@ public static class CompileProcess
                 }
                 else
                 {
-                    EncoderVisitor encoderVisitor = new EncoderVisitor();
-                    encoderVisitor.Visit(tree);
                     LinkedList<string> list = new LinkedList<string>();
+                    if (run)
+                    {
+                        EncoderVisitor encoderVisitor = new EncoderVisitor();
+                        encoderVisitor.Visit(tree);   
+                    }
                     return list;
                 }
             }

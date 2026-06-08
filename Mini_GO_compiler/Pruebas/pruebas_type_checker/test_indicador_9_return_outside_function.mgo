@@ -1,5 +1,8 @@
 // Prueba Indicador 9: No debe permitir return fuera de una función
 // ESTE ARCHIVO DEBE GENERAR ERRORES DE TYPE CHECKER
+/*No compilar y correr, podria contener limitaciones que provocaran un error en el encoder, compilar 
+y correr en Pruebas/mgo/pruebas_de_Encoder en su lugar
+*/
 
 package main;
 
